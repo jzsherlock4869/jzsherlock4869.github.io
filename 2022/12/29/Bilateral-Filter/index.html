@@ -20,14 +20,14 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"right","width":240,"display":"always","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="双边滤波原理（Bilateral Filtering） 基本思路双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。因此是一种 combined 滤波方式，因此叫做 bilateral ，即同时考虑两方面的信息。首先，对于图像滤波来说，一个通常的intuition是：（自然）图像在空间中变化缓慢，因此相邻的像素">
+  <meta name="description" content="双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Bilateral Filter">
+<meta property="og:title" content="双边滤波原理（Bilateral Filtering）">
 <meta property="og:url" content="http://example.com/2022/12/29/Bilateral-Filter/index.html">
 <meta property="og:site_name" content="AnotherX4869">
-<meta property="og:description" content="双边滤波原理（Bilateral Filtering） 基本思路双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。因此是一种 combined 滤波方式，因此叫做 bilateral ，即同时考虑两方面的信息。首先，对于图像滤波来说，一个通常的intuition是：（自然）图像在空间中变化缓慢，因此相邻的像素">
+<meta property="og:description" content="双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/Bilateral-Filter/v2-20b82bc22476606533ce250d68e32f56_720w.png">
+<meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-20b82bc22476606533ce250d68e32f56_720w.png">
 <meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-c9650f647e5dbaf520e8530b69f218da_720w.png">
 <meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-f8abe1c837073b64500290db281fb894_720w.png">
 <meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-061e03c53523b7665159a5b1c38d4ae1_720w.png">
@@ -35,10 +35,10 @@
 <meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-ebb11d34423238e7596062d5b7b25062_720w.png">
 <meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-a110c49ab57d4cd6d94069eb69067e9b_720w.png">
 <meta property="article:published_time" content="2022-12-29T05:18:36.000Z">
-<meta property="article:modified_time" content="2022-12-29T05:44:11.052Z">
+<meta property="article:modified_time" content="2022-12-29T05:54:49.191Z">
 <meta property="article:author" content="jzsherlock">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://example.com/Bilateral-Filter/v2-20b82bc22476606533ce250d68e32f56_720w.png">
+<meta name="twitter:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-20b82bc22476606533ce250d68e32f56_720w.png">
 
 <link rel="canonical" href="http://example.com/2022/12/29/Bilateral-Filter/">
 
@@ -53,7 +53,7 @@
   };
 </script>
 
-  <title>Bilateral Filter | AnotherX4869</title>
+  <title>双边滤波原理（Bilateral Filtering） | AnotherX4869</title>
   
 
 
@@ -182,7 +182,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Bilateral Filter
+          双边滤波原理（Bilateral Filtering）
         </h1>
 
         <div class="post-meta">
@@ -193,7 +193,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2022-12-29 13:18:36 / 修改时间：13:44:11" itemprop="dateCreated datePublished" datetime="2022-12-29T13:18:36+08:00">2022-12-29</time>
+              <time title="创建时间：2022-12-29 13:18:36 / 修改时间：13:54:49" itemprop="dateCreated datePublished" datetime="2022-12-29T13:18:36+08:00">2022-12-29</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -210,6 +210,7 @@
             </span>
 
           
+            <div class="post-description">双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。</div>
 
         </div>
       </header>
@@ -220,7 +221,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="双边滤波原理（Bilateral-Filtering）"><a href="#双边滤波原理（Bilateral-Filtering）" class="headerlink" title="双边滤波原理（Bilateral Filtering）"></a>双边滤波原理（Bilateral Filtering）</h2><p><img src="/Bilateral-Filter/v2-20b82bc22476606533ce250d68e32f56_720w.png" alt="双边滤波原理（Bilateral Filtering）"></p>
+        <h2 id="双边滤波原理（Bilateral-Filtering）"><a href="#双边滤波原理（Bilateral-Filtering）" class="headerlink" title="双边滤波原理（Bilateral Filtering）"></a>双边滤波原理（Bilateral Filtering）</h2><p><img src="/2022/12/29/Bilateral-Filter/v2-20b82bc22476606533ce250d68e32f56_720w.png" alt="双边滤波原理（Bilateral Filtering）"></p>
 <h3 id="基本思路"><a href="#基本思路" class="headerlink" title="基本思路"></a>基本思路</h3><p>双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。因此是一种 combined 滤波方式，因此叫做 bilateral ，即同时考虑两方面的信息。首先，对于图像滤波来说，一个通常的intuition是：（自然）图像在空间中变化缓慢，因此相邻的像素点会更相近。但是这个假设在图像的边缘处变得不成立。如果在边缘处也用这种思路来进行滤波的话，即认为相邻相近，则得到的结果必然会模糊掉边缘，这是不吼的，因此考虑再利用像素点的值的大小进行补充，因为边缘两侧的点的像素值差别很大，因此会使得其加权的时候权重具有很大的差别，从而使得只考虑自己所属的一边的邻域。可以理解成先根据像素值对要用来进行滤波的邻域做一个分割或分类，再给该点所属的类别相对较高的权重，然后进行邻域加权求和，得到最终结果。</p>
 <h3 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h3><p>在 bilateral filtering 中，两个要素即：closeness 和 similarity ，或者说 domain 和 range ，或者 geometric 和 photometric ，其数学表达方式相近，如下：</p>
 <p><img src="/2022/12/29/Bilateral-Filter/v2-c9650f647e5dbaf520e8530b69f218da_720w.png" alt="v2-c9650f647e5dbaf520e8530b69f218da_720w"></p>
