@@ -20,30 +20,40 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"right","width":240,"display":"always","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="The perfect insider 0xFFFFF">
-<meta property="og:type" content="website">
-<meta property="og:title" content="AnotherX4869">
-<meta property="og:url" content="http://example.com/index.html">
+  <meta name="description" content="双边滤波原理（Bilateral Filtering） 基本思路双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。因此是一种 combined 滤波方式，因此叫做 bilateral ，即同时考虑两方面的信息。首先，对于图像滤波来说，一个通常的intuition是：（自然）图像在空间中变化缓慢，因此相邻的像素">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Bilateral Filter">
+<meta property="og:url" content="http://example.com/2022/12/29/Bilateral-Filter/index.html">
 <meta property="og:site_name" content="AnotherX4869">
-<meta property="og:description" content="The perfect insider 0xFFFFF">
+<meta property="og:description" content="双边滤波原理（Bilateral Filtering） 基本思路双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。因此是一种 combined 滤波方式，因此叫做 bilateral ，即同时考虑两方面的信息。首先，对于图像滤波来说，一个通常的intuition是：（自然）图像在空间中变化缓慢，因此相邻的像素">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/Bilateral-Filter/assets/v2-20b82bc22476606533ce250d68e32f56_720w.png">
+<meta property="og:image" content="http://example.com/Bilateral-Filter/assets/v2-c9650f647e5dbaf520e8530b69f218da_720w.png">
+<meta property="og:image" content="http://example.com/Bilateral-Filter/assets/v2-f8abe1c837073b64500290db281fb894_720w.png">
+<meta property="og:image" content="http://example.com/Bilateral-Filter/assets/v2-061e03c53523b7665159a5b1c38d4ae1_720w.png">
+<meta property="og:image" content="http://example.com/Bilateral-Filter/assets/v2-ed438e46a5837a5369f996e0e3b7f84f_720w.webp">
+<meta property="og:image" content="http://example.com/Bilateral-Filter/assets/v2-ebb11d34423238e7596062d5b7b25062_720w.png">
+<meta property="og:image" content="http://example.com/Bilateral-Filter/assets/v2-a110c49ab57d4cd6d94069eb69067e9b_720w.png">
+<meta property="article:published_time" content="2022-12-29T05:18:36.000Z">
+<meta property="article:modified_time" content="2022-12-29T05:18:36.308Z">
 <meta property="article:author" content="jzsherlock">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/Bilateral-Filter/assets/v2-20b82bc22476606533ce250d68e32f56_720w.png">
 
-<link rel="canonical" href="http://example.com/">
+<link rel="canonical" href="http://example.com/2022/12/29/Bilateral-Filter/">
 
 
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
     sidebar: "",
-    isHome : true,
-    isPost : false,
+    isHome : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>AnotherX4869</title>
+  <title>Bilateral Filter | AnotherX4869</title>
   
 
 
@@ -152,9 +162,10 @@
         <div class="content-wrap">
           
 
-          <div class="content index posts-expand">
+          <div class="content post posts-expand">
             
-      
+
+    
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
@@ -170,10 +181,9 @@
       <meta itemprop="name" content="AnotherX4869">
     </span>
       <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/12/29/Bilateral-Filter/" class="post-title-link" itemprop="url">Bilateral Filter</a>
-        </h2>
+        <h1 class="post-title" itemprop="name headline">
+          Bilateral Filter
+        </h1>
 
         <div class="post-meta">
             <span class="post-meta-item">
@@ -209,7 +219,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="双边滤波原理（Bilateral-Filtering）"><a href="#双边滤波原理（Bilateral-Filtering）" class="headerlink" title="双边滤波原理（Bilateral Filtering）"></a>双边滤波原理（Bilateral Filtering）</h2><p><img src="/Bilateral-Filter/assets/v2-20b82bc22476606533ce250d68e32f56_720w.png" alt="双边滤波原理（Bilateral Filtering）"></p>
+        <h2 id="双边滤波原理（Bilateral-Filtering）"><a href="#双边滤波原理（Bilateral-Filtering）" class="headerlink" title="双边滤波原理（Bilateral Filtering）"></a>双边滤波原理（Bilateral Filtering）</h2><p><img src="/Bilateral-Filter/assets/v2-20b82bc22476606533ce250d68e32f56_720w.png" alt="双边滤波原理（Bilateral Filtering）"></p>
 <h3 id="基本思路"><a href="#基本思路" class="headerlink" title="基本思路"></a>基本思路</h3><p>双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。因此是一种 combined 滤波方式，因此叫做 bilateral ，即同时考虑两方面的信息。首先，对于图像滤波来说，一个通常的intuition是：（自然）图像在空间中变化缓慢，因此相邻的像素点会更相近。但是这个假设在图像的边缘处变得不成立。如果在边缘处也用这种思路来进行滤波的话，即认为相邻相近，则得到的结果必然会模糊掉边缘，这是不吼的，因此考虑再利用像素点的值的大小进行补充，因为边缘两侧的点的像素值差别很大，因此会使得其加权的时候权重具有很大的差别，从而使得只考虑自己所属的一边的邻域。可以理解成先根据像素值对要用来进行滤波的邻域做一个分割或分类，再给该点所属的类别相对较高的权重，然后进行邻域加权求和，得到最终结果。</p>
 <h3 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h3><p>在 bilateral filtering 中，两个要素即：closeness 和 similarity ，或者说 domain 和 range ，或者 geometric 和 photometric ，其数学表达方式相近，如下：</p>
 <p><img src="/Bilateral-Filter/assets/v2-c9650f647e5dbaf520e8530b69f218da_720w.png" alt="v2-c9650f647e5dbaf520e8530b69f218da_720w"></p>
@@ -233,92 +243,30 @@
 <p>reference：<br>Tomasi C, Manduchi R. Bilateral filtering for gray and color images” ICCV[J]. Iccv, 1998:839 - 846.</p>
 </blockquote>
 
-      
     </div>
 
     
     
     
+
       <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/12/29/Local-Laplacian-Filter/">
+        
 
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar_souhei.png">
-      <meta itemprop="name" content="jzsherlock">
-      <meta itemprop="description" content="The perfect insider 0xFFFFF">
-    </span>
 
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="AnotherX4869">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/12/29/Local-Laplacian-Filter/" class="post-title-link" itemprop="url">Local Laplacian Filter</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2022-12-29 10:23:10 / 修改时间：11:06:55" itemprop="dateCreated datePublished" datetime="2022-12-29T10:23:10+08:00">2022-12-29</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Image-Processing/" itemprop="url" rel="index"><span itemprop="name">Image Processing</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Image-Processing/HDR/" itemprop="url" rel="index"><span itemprop="name">HDR</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          
-      
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/12/29/Local-Laplacian-Filter/" rel="prev" title="Local Laplacian Filter">
+      <i class="fa fa-chevron-left"></i> Local Laplacian Filter
+    </a></div>
+      <div class="post-nav-item"></div>
     </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
       </footer>
+    
   </article>
   
   
-  
-
-
   
 
 
@@ -371,6 +319,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%8C%E8%BE%B9%E6%BB%A4%E6%B3%A2%E5%8E%9F%E7%90%86%EF%BC%88Bilateral-Filtering%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">双边滤波原理（Bilateral Filtering）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF"><span class="nav-number">1.1.</span> <span class="nav-text">基本思路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="nav-number">1.2.</span> <span class="nav-text">实现原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E6%95%B0%E8%AE%A8%E8%AE%BA"><span class="nav-number">1.3.</span> <span class="nav-text">参数讨论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E5%AE%83"><span class="nav-number">1.4.</span> <span class="nav-text">其它</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
