@@ -178,7 +178,7 @@ body {
   background: var(--body-bg-color);
   color: var(--text-color);
   font-family: 'Lato', "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: 1em;
+  font-size: 0.8em;
   line-height: 2;
 }
 @media (max-width: 991px) {
@@ -1134,12 +1134,6 @@ pre .javascript .function {
   max-width: 96px;
   padding: 2px;
 }
-.site-author-image {
-  transition: transform 1s ease-out;
-}
-.site-author-image:hover {
-  transform: rotateZ(360deg);
-}
 .site-author-name {
   color: #f5f5f5;
   font-weight: normal;
@@ -1166,7 +1160,7 @@ pre .javascript .function {
 }
 .links-of-author a::before,
 .links-of-author span.exturl::before {
-  background: #34f177;
+  background: #ffe4c3;
   border-radius: 50%;
   content: ' ';
   display: inline-block;
@@ -2308,7 +2302,7 @@ hr {
   text-align: center;
 }
 .posts-expand .post-body img {
-  margin-left: 0;
+  margin: 0 auto;
 }
 .posts-expand .post-tags {
   text-align: left;
