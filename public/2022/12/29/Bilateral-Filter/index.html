@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"right","width":240,"display":"always","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="双边滤波原理（Bilateral Filtering）">
+<meta property="og:url" content="http://example.com/2022/12/29/Bilateral-Filter/index.html">
+<meta property="og:site_name" content="AnotherX4869">
+<meta property="og:description" content="双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-20b82bc22476606533ce250d68e32f56_720w.png">
+<meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-c9650f647e5dbaf520e8530b69f218da_720w.png">
+<meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-f8abe1c837073b64500290db281fb894_720w.png">
+<meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-061e03c53523b7665159a5b1c38d4ae1_720w.png">
+<meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-ed438e46a5837a5369f996e0e3b7f84f_720w.webp">
+<meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-ebb11d34423238e7596062d5b7b25062_720w.png">
+<meta property="og:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-a110c49ab57d4cd6d94069eb69067e9b_720w.png">
+<meta property="article:published_time" content="2022-12-29T05:18:36.000Z">
+<meta property="article:modified_time" content="2022-12-29T13:40:03.393Z">
+<meta property="article:author" content="jzsherlock">
+<meta property="article:tag" content="filter">
+<meta property="article:tag" content="denoise">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2022/12/29/Bilateral-Filter/v2-20b82bc22476606533ce250d68e32f56_720w.png">
+
+<link rel="canonical" href="http://example.com/2022/12/29/Bilateral-Filter/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>双边滤波原理（Bilateral Filtering） | AnotherX4869</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">AnotherX4869</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">codes & notes</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="categories fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="about fa-fw"></i>About Me</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/12/29/Bilateral-Filter/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar_souhei.png">
+      <meta itemprop="name" content="jzsherlock">
+      <meta itemprop="description" content="The perfect insider 0xFFFFF">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="AnotherX4869">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          双边滤波原理（Bilateral Filtering）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-12-29 13:18:36 / 修改时间：21:40:03" itemprop="dateCreated datePublished" datetime="2022-12-29T13:18:36+08:00">2022-12-29</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Image-Processing/" itemprop="url" rel="index"><span itemprop="name">Image Processing</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Image-Processing/Denoise/" itemprop="url" rel="index"><span itemprop="name">Denoise</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="双边滤波原理（Bilateral-Filtering）"><a href="#双边滤波原理（Bilateral-Filtering）" class="headerlink" title="双边滤波原理（Bilateral Filtering）"></a>双边滤波原理（Bilateral Filtering）</h2><p><img src="/2022/12/29/Bilateral-Filter/v2-20b82bc22476606533ce250d68e32f56_720w.png" alt="双边滤波原理（Bilateral Filtering）"></p>
+<h3 id="基本思路"><a href="#基本思路" class="headerlink" title="基本思路"></a>基本思路</h3><p>双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。因此是一种 combined 滤波方式，因此叫做 bilateral ，即同时考虑两方面的信息。首先，对于图像滤波来说，一个通常的intuition是：（自然）图像在空间中变化缓慢，因此相邻的像素点会更相近。但是这个假设在图像的边缘处变得不成立。如果在边缘处也用这种思路来进行滤波的话，即认为相邻相近，则得到的结果必然会模糊掉边缘，这是不吼的，因此考虑再利用像素点的值的大小进行补充，因为边缘两侧的点的像素值差别很大，因此会使得其加权的时候权重具有很大的差别，从而使得只考虑自己所属的一边的邻域。可以理解成先根据像素值对要用来进行滤波的邻域做一个分割或分类，再给该点所属的类别相对较高的权重，然后进行邻域加权求和，得到最终结果。</p>
+<h3 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h3><p>在 bilateral filtering 中，两个要素即：closeness 和 similarity ，或者说 domain 和 range ，或者 geometric 和 photometric ，其数学表达方式相近，如下：</p>
+<p><img src="/2022/12/29/Bilateral-Filter/v2-c9650f647e5dbaf520e8530b69f218da_720w.png" alt="v2-c9650f647e5dbaf520e8530b69f218da_720w"></p>
+<p><img src="/2022/12/29/Bilateral-Filter/v2-f8abe1c837073b64500290db281fb894_720w.png" alt="v2-f8abe1c837073b64500290db281fb894_720w"></p>
+<p>其中积分号前面为归一化因子，这里考虑对所有的像素点进行加权，c 和 s 是 closeness 和 similarity 函数，x 代表要求的点，f (x) 代表该点的像素值。f(x) –&gt; h(x) 为滤波前后的image。我们最后的滤波函数为</p>
+<p><img src="/2022/12/29/Bilateral-Filter/v2-061e03c53523b7665159a5b1c38d4ae1_720w.png" alt="v2-061e03c53523b7665159a5b1c38d4ae1_720w"></p>
+<p>由于domain component，使得滤波特性较好，由于range component，使得crisp edge 可以保持。</p>
+<p>下图示意了有边缘的时候的权重和最后的滤波结果，可以看出权重在边界有很明显的分界，从而几乎只对自己所属的边缘一侧的像素点进行加权。</p>
+<p><img src="/2022/12/29/Bilateral-Filter/v2-ed438e46a5837a5369f996e0e3b7f84f_720w.webp" alt="v2-ed438e46a5837a5369f996e0e3b7f84f_720w"></p>
+<p>实现 c 和 s 两个函数的一种方法即 Gaussian 核，决定其性质的为各自的sigma参数，即 σd 和 σr 。<img src="/2022/12/29/Bilateral-Filter/v2-ebb11d34423238e7596062d5b7b25062_720w.png" alt="v2-ebb11d34423238e7596062d5b7b25062_720w"></p>
+<p><img src="/2022/12/29/Bilateral-Filter/v2-a110c49ab57d4cd6d94069eb69067e9b_720w.png" alt="v2-a110c49ab57d4cd6d94069eb69067e9b_720w"></p>
+<h3 id="参数讨论"><a href="#参数讨论" class="headerlink" title="参数讨论"></a>参数讨论</h3><p>对于空域的 Gaussian 滤波不需要继续解释，对于 Range Filtering ，即不考虑空间只考虑像素点的相似性进行加权的结果，作者进行分析，得到结论，值域滤波只是对待滤波的图像的直方图的一个变换，而对于单峰的（unimodal）的直方图，range filtering 将值域范围向着峰的中间即均值方向压缩。</p>
+<p>对于参数的选取，进行如下讨论：</p>
+<p>首先，两个 sigma 值为 kernel 的方差，方差越大，说明权重差别越小，因此表示不强调这一因素的影响，反之，则表示更强调这一因素导致的权重的不均衡。因此：</p>
+<p>两个方面的某个的 sigma 相对变小 表示这一方面相对较重要，得到强调。如 sigma_d 变小，表示更多采用近邻的值作平滑，说明图像的空间信息更重要，即相近相似。如 sigma_r 变小，表示和自己同一类的条件变得苛刻，从而强调值域的相似性。<br>其次，sigma_d 表示的是空域的平滑，因此对于没有边缘的，变化慢的部分更适合；sigma_r 表示值域的差别，因此强调这一差别，即减小 sigma_r 可以突出边缘。</p>
+<p>sigma_d 变大，图像每个区域的权重基本都源于值域滤波的权重，因此对于空间邻域信息不是很敏感；sigma_r 变大，则不太考虑值域，权重多来自于空间距离，因此近似于普通的高斯滤波，图像的保边性能下降。因此如果像更多的去除平滑区域的噪声，应该提高 sigma_d ，如果像保持边缘，则应该减小 sigma_r 。<br>极端情况，如果 sigma_d 无穷大，相当于值域滤波；sigma_r 无穷大，相当于空域高斯滤波。</p>
+<h3 id="其它"><a href="#其它" class="headerlink" title="其它"></a>其它</h3><p>对于彩色图片，由于两种颜色中可能有其他完全不同的颜色，因此不像灰度图那样，仅仅是 blurred ，而是会产生 auras like 的奇怪的晕圈，所以在双边滤波的过程中，将RGB转换到 CIE-Lab 色彩空间，这个空间与人的主观色彩辨识能力相关，因此可以改善这一缺陷。</p>
+<p>THE END</p>
+<p>version1: 2017&#x2F;12&#x2F;18 Mon 22:27</p>
+<blockquote>
+<p>reference：<br>Tomasi C, Manduchi R. Bilateral filtering for gray and color images” ICCV[J]. Iccv, 1998:839 - 846.</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/filter/" rel="tag"># filter</a>
+              <a href="/tags/denoise/" rel="tag"># denoise</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/12/29/CLAHE/" rel="prev" title="对比度增强算法 CLAHE: Contrast Limited Adaptive Histogram Equalization">
+      <i class="fa fa-chevron-left"></i> 对比度增强算法 CLAHE: Contrast Limited Adaptive Histogram Equalization
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/12/29/Local-Laplacian-Filter/" rel="next" title="Local Laplacian Filter 局部拉普拉斯金字塔滤波算法">
+      Local Laplacian Filter 局部拉普拉斯金字塔滤波算法 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%8C%E8%BE%B9%E6%BB%A4%E6%B3%A2%E5%8E%9F%E7%90%86%EF%BC%88Bilateral-Filtering%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">双边滤波原理（Bilateral Filtering）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF"><span class="nav-number">1.1.</span> <span class="nav-text">基本思路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="nav-number">1.2.</span> <span class="nav-text">实现原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E6%95%B0%E8%AE%A8%E8%AE%BA"><span class="nav-number">1.3.</span> <span class="nav-text">参数讨论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E5%AE%83"><span class="nav-number">1.4.</span> <span class="nav-text">其它</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="jzsherlock"
+      src="/images/avatar_souhei.png">
+  <p class="site-author-name" itemprop="name">jzsherlock</p>
+  <div class="site-description" itemprop="description">The perfect insider 0xFFFFF</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/jzsherlock4869" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;jzsherlock4869" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:jzsherlock@163.com" title="E-Mail → mailto:jzsherlock@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">jzsherlock</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>
