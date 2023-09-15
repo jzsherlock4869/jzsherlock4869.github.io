@@ -178,7 +178,7 @@ body {
   background: var(--body-bg-color);
   color: var(--text-color);
   font-family: 'Lato', "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: 0.85em;
+  font-size: 1em;
   line-height: 2;
 }
 @media (max-width: 991px) {
@@ -193,28 +193,28 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: 'Lato', 'Lato', "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: 'Noto Serif SC', 'Lato', "PingFang SC", "Microsoft YaHei", sans-serif;
   font-weight: bold;
   line-height: 1.5;
   margin: 20px 0 15px;
 }
 h1 {
-  font-size: 1.075em;
+  font-size: 0.675em;
 }
 h2 {
-  font-size: 0.95em;
+  font-size: 0.55em;
 }
 h3 {
-  font-size: 0.825em;
+  font-size: 0.425em;
 }
 h4 {
-  font-size: 0.7em;
+  font-size: 0.3em;
 }
 h5 {
-  font-size: 0.575em;
+  font-size: 0.175em;
 }
 h6 {
-  font-size: 0.45em;
+  font-size: 0.05em;
 }
 p {
   margin: 0 0 20px 0;
@@ -388,7 +388,7 @@ pre {
 }
 pre,
 code {
-  font-family: consolas, Menlo, monospace, "PingFang SC", "Microsoft YaHei";
+  font-family: 'Source Code Pro', consolas, Menlo, monospace, "PingFang SC", "Microsoft YaHei";
 }
 code {
   background: #eee;
@@ -974,7 +974,7 @@ pre .javascript .function {
   border-bottom: none;
   color: var(--brand-color);
   display: inline-block;
-  line-height: 1.5em;
+  line-height: 0.8em;
   padding: 0 40px;
   position: relative;
 }
@@ -982,8 +982,8 @@ pre .javascript .function {
   color: var(--brand-hover-color);
 }
 .site-title {
-  font-family: 'Lato', 'Lato', "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: 1.5em;
+  font-family: 'Noto Serif SC', 'Lato', "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 0.8em;
   font-weight: normal;
   margin: 0;
 }
@@ -1160,7 +1160,7 @@ pre .javascript .function {
 }
 .links-of-author a::before,
 .links-of-author span.exturl::before {
-  background: #ff9fff;
+  background: #a4672e;
   border-radius: 50%;
   content: ' ';
   display: inline-block;
