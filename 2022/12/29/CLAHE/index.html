@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Serif+SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha256-CTSx/A06dm1B063156EVh15m6Y67pAjZZaQc89LLSrU=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.18.2","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="图像对比度的定义，以及如何通过LUT拉伸重映射、直方图均衡，以及限制对比度的自适应分区域直方图均衡化算法等方式优化图像对比度。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="对比度与对比度增强算法：对比度拉伸、直方图均衡与CLAHE">
+<meta property="og:url" content="http://example.com/2022/12/29/CLAHE/index.html">
+<meta property="og:site_name" content="AnotherX4869">
+<meta property="og:description" content="图像对比度的定义，以及如何通过LUT拉伸重映射、直方图均衡，以及限制对比度的自适应分区域直方图均衡化算法等方式优化图像对比度。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2022/12/29/CLAHE/fig33.png">
+<meta property="og:image" content="http://example.com/2022/12/29/CLAHE/fig37.png">
+<meta property="article:published_time" content="2022-12-29T13:34:37.000Z">
+<meta property="article:modified_time" content="2023-12-16T13:02:25.495Z">
+<meta property="article:author" content="jzsherlock">
+<meta property="article:tag" content="enhancement">
+<meta property="article:tag" content="histogram">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2022/12/29/CLAHE/fig33.png">
+
+
+<link rel="canonical" href="http://example.com/2022/12/29/CLAHE/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2022/12/29/CLAHE/","path":"2022/12/29/CLAHE/","title":"对比度与对比度增强算法：对比度拉伸、直方图均衡与CLAHE"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>对比度与对比度增强算法：对比度拉伸、直方图均衡与CLAHE | AnotherX4869</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">AnotherX4869</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">codes & notes</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%BE%E5%83%8F%E7%9A%84%E5%AF%B9%E6%AF%94%E5%BA%A6"><span class="nav-number">1.</span> <span class="nav-text">图像的对比度</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AF%B9%E6%AF%94%E5%BA%A6%E6%8B%89%E4%BC%B8%E4%B8%8E%E7%9B%B4%E6%96%B9%E5%9B%BE%E5%9D%87%E8%A1%A1"><span class="nav-number">2.</span> <span class="nav-text">对比度拉伸与直方图均衡</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#clahe%E7%9A%84%E7%AE%97%E6%B3%95%E5%8E%9F%E7%90%86%E4%B8%8E%E5%8F%82%E6%95%B0"><span class="nav-number">3.</span> <span class="nav-text">CLAHE的算法原理与参数</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="jzsherlock"
+      src="/images/yagami.jpg">
+  <p class="site-author-name" itemprop="name">jzsherlock</p>
+  <div class="site-description" itemprop="description">救赎之道，就在其中</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/jzsherlock4869" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;jzsherlock4869" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:jzsherlock@163.com" title="E-Mail → mailto:jzsherlock@163.com" rel="noopener me" target="_blank"><i class="fas fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/12/29/CLAHE/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/yagami.jpg">
+      <meta itemprop="name" content="jzsherlock">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="AnotherX4869">
+      <meta itemprop="description" content="救赎之道，就在其中">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="对比度与对比度增强算法：对比度拉伸、直方图均衡与CLAHE | AnotherX4869">
+      <meta itemprop="description" content="图像对比度的定义，以及如何通过LUT拉伸重映射、直方图均衡，以及限制对比度的自适应分区域直方图均衡化算法等方式优化图像对比度。">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          对比度与对比度增强算法：对比度拉伸、直方图均衡与CLAHE
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-12-29 21:34:37" itemprop="dateCreated datePublished" datetime="2022-12-29T21:34:37+08:00">2022-12-29</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2023-12-16 21:02:25" itemprop="dateModified" datetime="2023-12-16T21:02:25+08:00">2023-12-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Image-Processing/" itemprop="url" rel="index"><span itemprop="name">Image Processing</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Image-Processing/HDR/" itemprop="url" rel="index"><span itemprop="name">HDR</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+            <div class="post-description">图像对比度的定义，以及如何通过LUT拉伸重映射、直方图均衡，以及限制对比度的自适应分区域直方图均衡化算法等方式优化图像对比度。</div>
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>TL;DR ：对比度表示图像的明暗对比强度，体现图像的细节对比关系和视觉观感效果；对比度拉伸和直方图均衡都是通过LUT表重映射原图像素取值来获得更好的对比度的图像，其中直方图均衡相当于根据原图直方图分布自适应的对比度拉伸。而CLAHE（限制对比度的自适应直方图均衡）是一种用自适应曲线映射的方式调整图像对比度的方法，它的核心在于即根据待调整区域的直方图设置目标曲线，同时又对曲线的形状进行一定程度的限制，使其更加保守，防止映射函数过于陡峭导致颜色分层等一系列问题。</p>
+</blockquote>
+<h1 id="图像的对比度">图像的对比度</h1>
+<p>一幅图像的对比度主要指的是图像中的明暗关系的对比强度，对比度高意味着图像视觉观感更加生动、通透，画面中的各种内容都可以比较好地被我们获取到；相反，对比度低则通常意味着画面灰蒙，图像中的各个物体取值差不多，不能很好地体现出不同内容之间的明暗关系变化，从而显得画面过平，不够立体和通透；</p>
+<p>从数学角度上来说，对比度可以通过图像中最大值和最小值的之间的差异来进行度量。对于常见的uint8类型的（取值范围为0-255之间的整数）图像来说，其对比度可以通过最大值和最小值之间的差值来衡量，差值越大意味着对比度越高。当然，这种方式并不能完全反映图像的对比度情况，设想一张图像，其绝大部分取值分布在90-100之间，但是在0和255处各自有一个像素取值到，那么实际上这张图的的对比度也是很低的（范围只有10个值的区间！）。这个例子可以看出，对于对比度的考察，最好的方法是可以通过直方图来进行，因为直方图不但反映了取值，而且表现出了取值的像素数量的比例。</p>
+<p>从直方图角度来说，对比度高意味着直方图在整个取值范围上展布的较为均匀，由于图像的显示范围（比如0-255）是离散且有限的，两个数值如果差异较小就会被离散化到同一个bin中，从而无法区分而导致图像损失细节。因此，直方图展布越均匀的图像越能够充分利用图像的显示范围，从而更充足地显示图像中的细节。</p>
+<p>下面展示了几个不同对比度的图像，及其对应的直方图关系，可以直观地对两者建立联系。</p>
+<figure>
+<img src="fig33.png" alt="不同对比度图像的直方图分布" /><figcaption aria-hidden="true">不同对比度图像的直方图分布</figcaption>
+</figure>
+<h1 id="对比度拉伸与直方图均衡">对比度拉伸与直方图均衡</h1>
+<p>由于实际场景中，并不是所有图像都具有较优的对比度，因此如何提升图像的对比度从而优化观感是一个重要的需求。</p>
+<p>从前面提到的对比度与直方图的关系可以很自然地想到，既然低对比度是由于直方图过于集中，那么如果我们可以通过某种方式，将低对比度图像的直方图“拉拽”到图像显示范围两端，那么它的对比度就会被提升。直方图的拉伸（stretching）对应于图像的操作就是对各个像素施加一个重映射，即设置一个LUT表（Look-Up Table），将原始图像中的每个像素的值映射到另一个值，这个LUT表示全局的，也就意味着所有的点都采用同样的映射方式。这种LUT映射可以参考OpenCV中的<a target="_blank" rel="noopener" href="https://docs.opencv.org/4.x/d2/de8/group__core__array.html#gab55b8d062b7f5587720ede032d34156f">cv::LUT</a>函数，在OpenCV中可以直接调用这个函数，将原图通过定义好的LUT映射到目标图。</p>
+<p>那么，对比度拉伸的LUT曲线应该具有怎样的性质呢？考虑到应当尽可能将原始图像集中在某段位置[a,b]的直方图拉到两端，那么a应该对应到0，b应该对应到255（以uint8为例）。因此，曲线应当是一个斜率大于1的斜线，并且两端被y=0和y=255所截断。考虑到前面提到过的情况，低对比度分布的集中不一定是其他区域完全为0，因此这个截断的直线应为S形曲线，其对应的物理含义就是将窄带分布进行展宽。</p>
+<p>上述操作就是对比度拉伸的基本操作，在PS、美图秀秀等图像编辑软件中，我们通常可以通过“曲线”功能来设置对比度拉伸的LUT曲线。但是这种方法是需要预先设定LUT表的，而不同的图像所需的最合适的LUT表示不同的，因此需要一种自适应方案，让我们可以自动获取到最合适的LUT表。这就是直方图均衡策略（histogram equalization）。</p>
+<p>直方图均衡的基本目标是通过LUT重映射，使得每张图片处理后都可以理论上实现直方图分布为均匀分布。通过数学推导【TODO】可以发现，当映射曲线为每张图片的CDF（cumulative distribution function，即直方图的积分）时，可以将直方图映射到均匀分布。该操作就是直方图均衡。</p>
+<h1 id="clahe的算法原理与参数">CLAHE的算法原理与参数</h1>
+<p>尽管直方图均衡可以满足自适应调整对比度的目的，但是由于它的映射LUT曲线直接来自原图，这种设定在原图直方图分布比较极端的时候容易出现不鲁棒的情况，具体表现在映射LUT表在局部具有过大或者过小的斜率，即过于陡峭/平缓。斜率过大，也就意味着原图中取值接近的两个值会被映射到差距更大，表现在图像上就是断层现象；相反，斜率过小则多个值映射到同一个值，表现在图像效果上就是涂抹感（细节内容损失）。为了对这种极端情况进行一定的修正，于是产生了CLAHE算法。</p>
+<p>CLAHE算法相对比与上述的直方图均衡，主要有两点改进：</p>
+<ol type="1">
+<li>由全局统计直方图改为局部统计并进行映射，这个改动带来的提升是自然的；</li>
+<li>在原图直方图-&gt;CDF（作为LUT）的计算过程中，对大于某个设定阈值的直方图取值进行限制，并将多出的面积均分到所有取值中，从而使得原图直方图较为平缓，得到的LUT表也尽量减少斜率过大的情况。</li>
+</ol>
+<p>CLAHE的基本计算逻辑示意图如下所示（上方为处理前后的直方图，下方为与上面对应的CDF曲线，可以看到CLAHE处理后的曲线更加平滑无大斜率突变）。</p>
+<figure>
+<img src="fig37.png" alt="CLAHE核心操作" /><figcaption aria-hidden="true">CLAHE核心操作</figcaption>
+</figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/enhancement/" rel="tag"># enhancement</a>
+              <a href="/tags/histogram/" rel="tag"># histogram</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/12/29/Bilateral-Filter/" rel="prev" title="双边滤波原理与改进策略（Bilateral Filtering）">
+                  <i class="fa fa-angle-left"></i> 双边滤波原理与改进策略（Bilateral Filtering）
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2023/01/04/Guided-Filter/" rel="next" title="导向滤波（Guided Filter）原理、应用与工程实现">
+                  导向滤波（Guided Filter）原理、应用与工程实现 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">jzsherlock</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+
+</body>
+</html>
