@@ -19,25 +19,31 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.18.2","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="西风烈，长空雁叫霜晨月">
-<meta property="og:type" content="website">
-<meta property="og:title" content="RevML">
-<meta property="og:url" content="http://example.com/tags/gaussian-pyramid/index.html">
+    <meta name="description" content="利用MLP神经网络根据位置和方向对3D场景进行隐式建模，从而利用建模的3D场景进行未知新视角的渲染合成（new view synthesis）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="NeRF（Neural Radiance Field）神经辐射场基本原理">
+<meta property="og:url" content="http://example.com/2023/12/30/NeRF/index.html">
 <meta property="og:site_name" content="RevML">
-<meta property="og:description" content="西风烈，长空雁叫霜晨月">
+<meta property="og:description" content="利用MLP神经网络根据位置和方向对3D场景进行隐式建模，从而利用建模的3D场景进行未知新视角的渲染合成（new view synthesis）">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-12-29T16:23:01.000Z">
+<meta property="article:modified_time" content="2023-12-29T16:31:49.378Z">
 <meta property="article:author" content="jzsherlock">
+<meta property="article:tag" content="3d vision">
+<meta property="article:tag" content="nerf">
+<meta property="article:tag" content="pasition encoding">
+<meta property="article:tag" content="rendering">
 <meta name="twitter:card" content="summary">
 
 
-<link rel="canonical" href="http://example.com/tags/gaussian-pyramid/">
+<link rel="canonical" href="http://example.com/2023/12/30/NeRF/">
 
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":false,"lang":"zh-CN","comments":"","permalink":"","path":"tags/gaussian-pyramid/index.html","title":""}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2023/12/30/NeRF/","path":"2023/12/30/NeRF/","title":"NeRF（Neural Radiance Field）神经辐射场基本原理"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>标签: gaussian pyramid | RevML</title>
+<title>NeRF（Neural Radiance Field）神经辐射场基本原理 | RevML</title>
   
 
 
@@ -97,7 +103,7 @@
   
   <aside class="sidebar">
 
-    <div class="sidebar-inner sidebar-overview-active">
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
       <ul class="sidebar-nav">
         <li class="sidebar-nav-toc">
           文章目录
@@ -110,6 +116,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#nerf%E7%9A%84%E4%BB%BB%E5%8A%A1%E8%AE%BE%E5%AE%9A"><span class="nav-number">1.</span> <span class="nav-text">NeRF的任务设定</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">基本思路与实现方式</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E6%93%8D%E4%BD%9C1%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81positional-encoding"><span class="nav-number">3.</span> <span class="nav-text">关键操作1：位置编码（positional encoding）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E6%93%8D%E4%BD%9C2%E5%B1%82%E6%AC%A1%E9%87%87%E6%A0%B7hierarchical-sampling"><span class="nav-number">4.</span> <span class="nav-text">关键操作2：层次采样（hierarchical sampling）</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -159,50 +166,115 @@
 
     </div>
 
-    <div class="main-inner tag posts-collapse">
+    <div class="main-inner post posts-expand">
 
 
   
+
+
+<div class="post-block">
   
   
-  <div class="post-block">
-    <div class="post-content">
-      <div class="collection-title">
-        <h1 class="collection-header">gaussian pyramid
-          <small>标签</small>
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/12/30/NeRF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/lawliet.png">
+      <meta itemprop="name" content="jzsherlock">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="RevML">
+      <meta itemprop="description" content="西风烈，长空雁叫霜晨月">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="NeRF（Neural Radiance Field）神经辐射场基本原理 | RevML">
+      <meta itemprop="description" content="利用MLP神经网络根据位置和方向对3D场景进行隐式建模，从而利用建模的3D场景进行未知新视角的渲染合成（new view synthesis）">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          NeRF（Neural Radiance Field）神经辐射场基本原理
         </h1>
-      </div>
 
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
       
-    <div class="collection-year">
-      <span class="collection-header">2022</span>
+
+      <time title="创建时间：2023-12-30 00:23:01 / 修改时间：00:31:49" itemprop="dateCreated datePublished" datetime="2023-12-30T00:23:01+08:00">2023-12-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Comupter-Vision/" itemprop="url" rel="index"><span itemprop="name">Comupter Vision</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Comupter-Vision/Rendering/" itemprop="url" rel="index"><span itemprop="name">Rendering</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Comupter-Vision/Rendering/3D-Reconstruction/" itemprop="url" rel="index"><span itemprop="name">3D Reconstruction</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+            <div class="post-description">利用MLP神经网络根据位置和方向对3D场景进行隐式建模，从而利用建模的3D场景进行未知新视角的渲染合成（new view synthesis）</div>
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="nerf的任务设定">NeRF的任务设定</h1>
+<h1 id="基本思路与实现方式">基本思路与实现方式</h1>
+<h1 id="关键操作1位置编码positional-encoding">关键操作1：位置编码（positional encoding）</h1>
+<h1 id="关键操作2层次采样hierarchical-sampling">关键操作2：层次采样（hierarchical sampling）</h1>
+
     </div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-12-29T10:23:10+08:00"
-              content="2022-12-29">
-          12-29
-        </time>
-      </div>
+    
+    
+    
 
-      <div class="post-title">
-        <a class="post-title-link" href="/2022/12/29/Local-Laplacian-Filter/" itemprop="url">
-          <span itemprop="name">Local Laplacian Filter 局部拉普拉斯金字塔滤波算法</span>
-        </a>
-      </div>
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/3d-vision/" rel="tag"># 3d vision</a>
+              <a href="/tags/nerf/" rel="tag"># nerf</a>
+              <a href="/tags/pasition-encoding/" rel="tag"># pasition encoding</a>
+              <a href="/tags/rendering/" rel="tag"># rendering</a>
+          </div>
 
-      
-    </header>
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2023/12/28/Radon/" rel="prev" title="Radon变换原理及其应用">
+                  <i class="fa fa-angle-left"></i> Radon变换原理及其应用
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
   </article>
+</div>
 
-    </div>
-  </div>
-  
-  
-  
+
+
+
+
 
 </div>
   </main>
