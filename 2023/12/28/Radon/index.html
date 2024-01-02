@@ -28,8 +28,9 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://example.com/2023/12/28/Radon/image-20231228231551784.png">
 <meta property="og:image" content="http://example.com/2023/12/28/Radon/image-20231230024821375.png">
+<meta property="og:image" content="http://example.com/2023/12/28/Radon/image-20240102235059395.png">
 <meta property="article:published_time" content="2023-12-27T16:13:56.000Z">
-<meta property="article:modified_time" content="2023-12-29T18:57:59.755Z">
+<meta property="article:modified_time" content="2024-01-02T15:51:08.412Z">
 <meta property="article:author" content="jzsherlock">
 <meta property="article:tag" content="image processing">
 <meta property="article:tag" content="transformation domain">
@@ -214,7 +215,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2023-12-30 02:57:59" itemprop="dateModified" datetime="2023-12-30T02:57:59+08:00">2023-12-30</time>
+      <time title="修改时间：2024-01-02 23:51:08" itemprop="dateModified" datetime="2024-01-02T23:51:08+08:00">2024-01-02</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -276,7 +277,11 @@ F_{1D}\cdot Proj_{1D} = Slice_{2D} \cdot F_{2D}
 \]</span> 简单来说就是：对2D的傅里叶域取一个角度的切片，等价于先沿着该角度投影再做1D傅里叶变换。</p>
 <h1 id="实验示例">实验示例</h1>
 <p>通过一个简单实验演示Radon变换的效果。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> skimage.data <span class="keyword">import</span> shepp_logan_phantom</span><br><span class="line"><span class="keyword">from</span> skimage.transform <span class="keyword">import</span> radon, rescale, iradon</span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试图为Shepp-Logan幻影图：https://en.wikipedia.org/wiki/Shepp-Logan_phantom</span></span><br><span class="line">image = shepp_logan_phantom()</span><br><span class="line">image = rescale(image, scale=<span class="number">0.4</span>, mode=<span class="string">&#x27;reflect&#x27;</span>, channel_axis=<span class="literal">None</span>)</span><br><span class="line"><span class="comment"># 测试不同的角度采样比例</span></span><br><span class="line"><span class="keyword">for</span> ratio <span class="keyword">in</span> [<span class="number">0.1</span>, <span class="number">0.3</span>, <span class="number">0.5</span>, <span class="number">1.0</span>]:</span><br><span class="line">    theta = np.linspace(<span class="number">0.</span>, <span class="number">180.</span>, <span class="built_in">int</span>(ratio * <span class="built_in">max</span>(image.shape)), endpoint=<span class="literal">False</span>)</span><br><span class="line">    <span class="comment"># radon transform</span></span><br><span class="line">    sinogram = radon(image, theta=theta)</span><br><span class="line">    <span class="comment"># inverse radon transform</span></span><br><span class="line">    recon = iradon(sinogram, theta=theta, filter_name=<span class="string">&#x27;ramp&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    ax = plt.figure()</span><br><span class="line">    ax.add_subplot(<span class="number">131</span>)</span><br><span class="line">    plt.imshow(image, aspect=<span class="string">&quot;auto&quot;</span>)</span><br><span class="line">    plt.title(<span class="string">&#x27;image&#x27;</span>)</span><br><span class="line">    ax.add_subplot(<span class="number">132</span>)</span><br><span class="line">    plt.imshow(sinogram, aspect=<span class="string">&quot;auto&quot;</span>)</span><br><span class="line">    plt.title(<span class="string">f&#x27;sinogram <span class="subst">&#123;ratio&#125;</span>&#x27;</span>)</span><br><span class="line">    ax.add_subplot(<span class="number">133</span>)</span><br><span class="line">    plt.imshow(recon, aspect=<span class="string">&quot;auto&quot;</span>)</span><br><span class="line">    plt.title(<span class="string">&#x27;reconstruction&#x27;</span>)</span><br><span class="line"></span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p>测试效果如下，可以看出，采样角度足够密集的情况下，可以较好重建原图。</p>
+<figure>
+<img src="image-20240102235059395.png" alt="image-20240102235059395" /><figcaption aria-hidden="true">image-20240102235059395</figcaption>
+</figure>
 <h1 id="reference">reference</h1>
 <p><a target="_blank" rel="noopener" href="https://digitalcommons.colby.edu/cgi/viewcontent.cgi?referer=&amp;httpsredir=1&amp;article=1649&amp;context=honorstheses">The Radon Transform and the Mathematics of Medical Imaging</a></p>
 <p><a target="_blank" rel="noopener" href="https://ir.cwi.nl/pub/10070/10070D.pdf">The Radon Transform: First Steps</a></p>
@@ -325,7 +330,7 @@ F_{1D}\cdot Proj_{1D} = Slice_{2D} \cdot F_{2D}
 
   <div class="copyright">
     &copy; 
-    <span itemprop="copyrightYear">2023</span>
+    <span itemprop="copyrightYear">2024</span>
     <span class="with-love">
       <i class="fa fa-heart"></i>
     </span>
