@@ -26,14 +26,17 @@
 <meta property="og:site_name" content="RevML">
 <meta property="og:description" content="利用MLP神经网络根据位置和方向对3D场景进行隐式建模，从而利用建模的3D场景进行未知新视角的渲染合成（new view synthesis）">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2023/12/30/NeRF/image-20240103231603491.png">
+<meta property="og:image" content="http://example.com/2023/12/30/NeRF/image-20240103234021032.png">
 <meta property="article:published_time" content="2023-12-29T16:23:01.000Z">
-<meta property="article:modified_time" content="2023-12-29T19:01:55.696Z">
+<meta property="article:modified_time" content="2024-01-03T15:50:04.986Z">
 <meta property="article:author" content="jzsherlock">
 <meta property="article:tag" content="3d vision">
 <meta property="article:tag" content="nerf">
 <meta property="article:tag" content="pasition encoding">
 <meta property="article:tag" content="rendering">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/12/30/NeRF/image-20240103231603491.png">
 
 
 <link rel="canonical" href="http://example.com/2023/12/30/NeRF/">
@@ -116,7 +119,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#nerf%E7%9A%84%E4%BB%BB%E5%8A%A1%E8%AE%BE%E5%AE%9A"><span class="nav-number">1.</span> <span class="nav-text">NeRF的任务设定</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">基本思路与实现方式</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E6%93%8D%E4%BD%9C1%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81positional-encoding"><span class="nav-number">3.</span> <span class="nav-text">关键操作1：位置编码（positional encoding）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E6%93%8D%E4%BD%9C2%E5%B1%82%E6%AC%A1%E9%87%87%E6%A0%B7hierarchical-sampling"><span class="nav-number">4.</span> <span class="nav-text">关键操作2：层次采样（hierarchical sampling）</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#nerf%E7%9A%84%E4%BB%BB%E5%8A%A1%E8%AE%BE%E5%AE%9A"><span class="nav-number">1.</span> <span class="nav-text">NeRF的任务设定</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%80%9D%E8%B7%AF%E4%B8%8E%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">基本思路与实现方式</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E6%93%8D%E4%BD%9C1%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81"><span class="nav-number">3.</span> <span class="nav-text">关键操作1：位置编码</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E6%93%8D%E4%BD%9C2%E5%B1%82%E6%AC%A1%E9%87%87%E6%A0%B7"><span class="nav-number">4.</span> <span class="nav-text">关键操作2：层次采样</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#reference"><span class="nav-number">5.</span> <span class="nav-text">reference</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -205,9 +208,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2023-12-30 00:23:01 / 修改时间：03:01:55" itemprop="dateCreated datePublished" datetime="2023-12-30T00:23:01+08:00">2023-12-30</time>
+      <time title="创建时间：2023-12-30 00:23:01" itemprop="dateCreated datePublished" datetime="2023-12-30T00:23:01+08:00">2023-12-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-01-03 23:50:04" itemprop="dateModified" datetime="2024-01-03T23:50:04+08:00">2024-01-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -234,9 +243,39 @@
     
     
     <div class="post-body" itemprop="articleBody"><h1 id="nerf的任务设定">NeRF的任务设定</h1>
+<p>NeRF全称<strong>神经辐射场（Neural Radiance Field）</strong>，简单来说，就是通过神经网络直接对辐射场进行建模，从而可以通过查询的方式找到各个点的体密度与颜色值，然后通过对camera ray的方向进行体渲染（volume rendering）的方式得到特定视角下的渲染结果。NeRF的任务设定是：首先获取到一系列不同视角下的成像结果（包括对应的相机内外参），然后利用这些特定角度的成像结果作为约束，对一个MLP网络建模，模型训练好后，就可以将新的位置和角度输入到网络中，结合体渲染方式得到新视角下的图像。这个任务通常被称为新视角合成（new view synthesis）。具体如图所示。</p>
+<figure>
+<img src="image-20240103231603491.png" alt="image-20240103231603491" /><figcaption aria-hidden="true">image-20240103231603491</figcaption>
+</figure>
 <h1 id="基本思路与实现方式">基本思路与实现方式</h1>
-<h1 id="关键操作1位置编码positional-encoding">关键操作1：位置编码（positional encoding）</h1>
-<h1 id="关键操作2层次采样hierarchical-sampling">关键操作2：层次采样（hierarchical sampling）</h1>
+<p>NeRF将一个静态场景视为一个5D function，其自变量（也就是query）是3D位置+2D方向，表示为<span class="math inline">\((x,y,z,\phi,\theta)\)</span>，这里的位置<span class="math inline">\((x,y,z)\)</span>就是场景中一点在3D空间中的坐标，而<span class="math inline">\((\phi,\theta)\)</span>是从该点发出的射线的方向，3D空间的射线用两个角度即可表示（类似2D空间的极坐标角度表示射线），输出为该点的辐射密度（可以简单理解为不透明度，控制一条射线穿过该点的累积量）和视角相关的RGB值，表示为<span class="math inline">\((RGB, \sigma)\)</span>。</p>
+<p>如果采用一个MLP网络将上述的5D位置角度输入到<span class="math inline">\((RGB,\sigma)\)</span>的计算过程隐式建构出来，那么这个MLP就可以作为该3D场景的一个隐式表示了，这就是NeRF的基本原理。由于密度值可以认为是方向无关的，而RGB是视角相关的（不同方向下看该点的颜色不同），为了强制密度只与3D位置有关，这个MLP实现方法如下：先输入3D位置<span class="math inline">\((x,y,z)\)</span>得到feature后，直接预测密度<span class="math inline">\(\sigma\)</span>，然后将feature加上方向<span class="math inline">\((\phi,\theta)\)</span>再过一层网络，得到RGB。这样就使得密度只和位置相关，而与视角无关，而RGB与两者都相关了。</p>
+<p>建模完成后，下面一个重要的问题就是如何优化。由于从3D到2D相机成像平面的过程（即rendering）是一个比较容易的正演过程，同时又是可微的，因此可以对建模得到的隐式的3D场景取对应的射线，从而利用MLP输出得到对应的渲染结果，然后与已知角度的图像进行对比，minimize两者之间的差异。将这个loss反传，即可对MLP进行优化。</p>
+<p>从3D到2D的渲染采用了volume rendering的方式，其计算如下： <span class="math display">\[
+C(r) = \int_{t_{near}}^{t_{far}}T(t)\sigma(r(t))c(r(t),d)dt
+\]</span> 其中： <span class="math display">\[
+T(t) = \exp(-\int_{t_{near}}^t\sigma(r(s))ds)
+\]</span> 这个<span class="math inline">\(T(t)\)</span>可以视为从相机沿着一条射线观察场景的某一点，该点前面有多少遮挡。如果遮挡严重，这个值就很小，也就是说被遮挡的点对于最后渲染结果的贡献很小，vice versa。</p>
+<p>NeRF的过程如下所示：</p>
+<figure>
+<img src="image-20240103234021032.png" alt="image-20240103234021032" /><figcaption aria-hidden="true">image-20240103234021032</figcaption>
+</figure>
+<p>这个过程训练较为困难低效，因此还有两个重要的关键操作：</p>
+<ol type="1">
+<li>用position encoding对位置坐标进行编码；</li>
+<li>hierarchical sampling procedure减少对于高频信息的查询次数；</li>
+</ol>
+<h1 id="关键操作1位置编码">关键操作1：位置编码</h1>
+<p>神经网络偏向于学低频信息，将输入数据通过高频函数映射到高维空间有助于fit带有高频的信息。</p>
+<p>具体做法： <span class="math display">\[
+\gamma(p) = (\sin(2^0\pi p), \cos(2^0\pi p), \cdots, \sin(2^{L-1}\pi p), \cos(2^{L-1}\pi p))
+\]</span> 与Transformer中的目的不同，Transformer中用于补充在token化之后的时序关系信息，而NeRF则是用来将连续的坐标信息映射到高维空间，补充高频信息，以便网络更好学习高频。</p>
+<h1 id="关键操作2层次采样">关键操作2：层次采样</h1>
+<p>Hierarchical volume sampling</p>
+<p>先分层抽样，即分bins均匀抽样，得到coarse结果，用该结果估计一条ray上的渲染权重，以此确定该ray的点的重要性分布（哪些是visible的）。从而根据该分布的cdf进行<strong>逆变换采样（inverse transform sampling）</strong>，得到fine的结果。最终的loss函数就是两者之和。</p>
+<h1 id="reference">reference</h1>
+<p><a target="_blank" rel="noopener" href="https://www.matthewtancik.com/nerf">NeRF: Neural Radiance Fields</a></p>
+<p>https://arxiv.org/pdf/2003.08934.pdf</p>
 
     </div>
 
