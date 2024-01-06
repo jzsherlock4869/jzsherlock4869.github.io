@@ -19,12 +19,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.18.2","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="西风烈，长空雁叫霜晨月">
+    <meta name="description" content="wir lieben einander wie Mohn und Gedächtnis">
 <meta property="og:type" content="website">
-<meta property="og:title" content="RevML">
+<meta property="og:title" content="RevelationML">
 <meta property="og:url" content="http://example.com/index.html">
-<meta property="og:site_name" content="RevML">
-<meta property="og:description" content="西风烈，长空雁叫霜晨月">
+<meta property="og:site_name" content="RevelationML">
+<meta property="og:description" content="wir lieben einander wie Mohn und Gedächtnis">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="jzsherlock">
 <meta name="twitter:card" content="summary">
@@ -37,7 +37,7 @@
 <script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":true,"isPost":false,"lang":"zh-CN","comments":"","permalink":"","path":"index.html","title":""}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>RevML</title>
+<title>RevelationML</title>
   
 
 
@@ -182,10 +182,10 @@ mjx-container[display="true"] + br {
 
     <a href="/" class="brand" rel="start">
       <i class="logo-line"></i>
-      <h1 class="site-title">RevML</h1>
+      <h1 class="site-title">RevelationML</h1>
       <i class="logo-line"></i>
     </a>
-      <p class="site-subtitle" itemprop="description">Revelation of Machine Learning</p>
+      <p class="site-subtitle" itemprop="description">機器學習默示錄</p>
   </div>
 
   <div class="site-nav-right">
@@ -230,24 +230,24 @@ mjx-container[display="true"] + br {
     <img class="site-author-image" itemprop="image" alt="jzsherlock"
       src="/images/lawliet.png">
   <p class="site-author-name" itemprop="name">jzsherlock</p>
-  <div class="site-description" itemprop="description">西风烈，长空雁叫霜晨月</div>
+  <div class="site-description" itemprop="description">wir lieben einander wie Mohn und Gedächtnis</div>
 </div>
 <div class="site-state-wrap animated">
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-count">13</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-count">14</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-count">24</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -281,6 +281,546 @@ mjx-container[display="true"] + br {
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/01/06/CLIP/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/lawliet.png">
+      <meta itemprop="name" content="jzsherlock">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="RevelationML">
+      <meta itemprop="description" content="wir lieben einander wie Mohn und Gedächtnis">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | RevelationML">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2024/01/06/CLIP/" class="post-title-link" itemprop="url">CLIP模型基本原理</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2024-01-06 23:56:30 / 修改时间：23:56:38" itemprop="dateCreated datePublished" datetime="2024-01-06T23:56:30+08:00">2024-01-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Computer-Vision/" itemprop="url" rel="index"><span itemprop="name">Computer Vision</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Computer-Vision/Multimodal/" itemprop="url" rel="index"><span itemprop="name">Multimodal</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>CLIP模型（Contrastive Language-Image Pretraining）是由OpenAI开发的图文多模态模型，其目的是建模自然语言与图像特征之间的关联性。现在已经在很多任务中被作为插件模型应用于图像和文本的交互过程中（比如将文本提示引入到分割、定位等任务中）。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/01/06/CLIP/">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/01/06/3DGS/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/lawliet.png">
+      <meta itemprop="name" content="jzsherlock">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="RevelationML">
+      <meta itemprop="description" content="wir lieben einander wie Mohn und Gedächtnis">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | RevelationML">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2024/01/06/3DGS/" class="post-title-link" itemprop="url">3D Gaussian Splatting原理简介</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2024-01-06 23:52:17 / 修改时间：23:52:21" itemprop="dateCreated datePublished" datetime="2024-01-06T23:52:17+08:00">2024-01-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Computer-Vision/" itemprop="url" rel="index"><span itemprop="name">Computer Vision</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Computer-Vision/Rendering/" itemprop="url" rel="index"><span itemprop="name">Rendering</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>3D Gaussian Splatting（3DGS）通过利用3D Gaussian分布对3D空间物体进行模拟，以渲染后的目标图像作为约束，对3D空间内容进行建模，3DGS相比于NeRF效率更高。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/01/06/3DGS/">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/01/06/VAE/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/lawliet.png">
+      <meta itemprop="name" content="jzsherlock">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="RevelationML">
+      <meta itemprop="description" content="wir lieben einander wie Mohn und Gedächtnis">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | RevelationML">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2024/01/06/VAE/" class="post-title-link" itemprop="url">变分自编码（VAE）基本理论与模型实现</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2024-01-06 23:48:36 / 修改时间：23:48:40" itemprop="dateCreated datePublished" datetime="2024-01-06T23:48:36+08:00">2024-01-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Computer-Vision/" itemprop="url" rel="index"><span itemprop="name">Computer Vision</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Computer-Vision/AIGC/" itemprop="url" rel="index"><span itemprop="name">AIGC</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>变分自编码模型通过编解码过程，将已知分布映射到目标数据分布中，从而实现对目标域图像内容的生成。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/01/06/VAE/">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/01/06/SAM/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/lawliet.png">
+      <meta itemprop="name" content="jzsherlock">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="RevelationML">
+      <meta itemprop="description" content="wir lieben einander wie Mohn und Gedächtnis">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | RevelationML">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2024/01/06/SAM/" class="post-title-link" itemprop="url">Segment-Anything模型（SAM）基本原理与代码分析</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2024-01-06 23:46:19 / 修改时间：23:46:23" itemprop="dateCreated datePublished" datetime="2024-01-06T23:46:19+08:00">2024-01-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Computer-Vision/" itemprop="url" rel="index"><span itemprop="name">Computer Vision</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Computer-Vision/Segmentation/" itemprop="url" rel="index"><span itemprop="name">Segmentation</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>Segment-Anything（分割一切）模型，又称SAM，是2023年提出的视觉分割领域的通用大模型，可以通过各种prompt（点击、bbox、mask等）提供的信息，引导模型直接输出想要的分割结果，另外也可以直接对图像进行整图分割解析。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/01/06/SAM/">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/01/06/Hough/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/lawliet.png">
+      <meta itemprop="name" content="jzsherlock">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="RevelationML">
+      <meta itemprop="description" content="wir lieben einander wie Mohn und Gedächtnis">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | RevelationML">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2024/01/06/Hough/" class="post-title-link" itemprop="url">霍夫变换（Hough Transform）与广义霍夫变换（GHT）</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2024-01-06 23:42:20 / 修改时间：23:42:35" itemprop="dateCreated datePublished" datetime="2024-01-06T23:42:20+08:00">2024-01-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Image-Processing/" itemprop="url" rel="index"><span itemprop="name">Image Processing</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Image-Processing/Transformation/" itemprop="url" rel="index"><span itemprop="name">Transformation</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>霍夫变换基于参数空间搜索的方式对参数化的形状（比如直线、圆形等）在图像中进行检出。广义霍夫变换利用模板匹配（template matching）的思路，将参数空间搜索的思路推广至无解析表达的形状的提取任务中。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/01/06/Hough/">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/01/06/Inverse-Transform-Sampling/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/lawliet.png">
+      <meta itemprop="name" content="jzsherlock">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="RevelationML">
+      <meta itemprop="description" content="wir lieben einander wie Mohn und Gedächtnis">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | RevelationML">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2024/01/06/Inverse-Transform-Sampling/" class="post-title-link" itemprop="url">逆变换采样（Inverse Transform Sampling）原理</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2024-01-06 23:38:22 / 修改时间：23:42:37" itemprop="dateCreated datePublished" datetime="2024-01-06T23:38:22+08:00">2024-01-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Math/" itemprop="url" rel="index"><span itemprop="name">Math</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Math/Probability/" itemprop="url" rel="index"><span itemprop="name">Probability</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <p>逆变换采样又称为逆万流归宗，其主要思路是通过已知的目标分布的累积分布函数（CDF），从均匀分布U(0,1)中生产符合目标分布的随机变量，从而用于相关的模拟实验。其中生产正态分布的特例为Box-Muller变换。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/01/06/Inverse-Transform-Sampling/">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
     <link itemprop="mainEntityOfPage" href="http://example.com/2023/12/30/NeRF/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -289,12 +829,12 @@ mjx-container[display="true"] + br {
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="RevML">
-      <meta itemprop="description" content="西风烈，长空雁叫霜晨月">
+      <meta itemprop="name" content="RevelationML">
+      <meta itemprop="description" content="wir lieben einander wie Mohn und Gedächtnis">
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | RevML">
+      <meta itemprop="name" content="undefined | RevelationML">
       <meta itemprop="description" content="">
     </span>
       <header class="post-header">
@@ -317,7 +857,7 @@ mjx-container[display="true"] + br {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2024-01-04 10:51:35" itemprop="dateModified" datetime="2024-01-04T10:51:35+08:00">2024-01-04</time>
+      <time title="修改时间：2024-01-06 23:50:00" itemprop="dateModified" datetime="2024-01-06T23:50:00+08:00">2024-01-06</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -385,12 +925,12 @@ mjx-container[display="true"] + br {
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="RevML">
-      <meta itemprop="description" content="西风烈，长空雁叫霜晨月">
+      <meta itemprop="name" content="RevelationML">
+      <meta itemprop="description" content="wir lieben einander wie Mohn und Gedächtnis">
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | RevML">
+      <meta itemprop="name" content="undefined | RevelationML">
       <meta itemprop="description" content="">
     </span>
       <header class="post-header">
@@ -481,12 +1021,12 @@ mjx-container[display="true"] + br {
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="RevML">
-      <meta itemprop="description" content="西风烈，长空雁叫霜晨月">
+      <meta itemprop="name" content="RevelationML">
+      <meta itemprop="description" content="wir lieben einander wie Mohn und Gedächtnis">
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | RevML">
+      <meta itemprop="name" content="undefined | RevelationML">
       <meta itemprop="description" content="">
     </span>
       <header class="post-header">
@@ -577,12 +1117,12 @@ mjx-container[display="true"] + br {
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="RevML">
-      <meta itemprop="description" content="西风烈，长空雁叫霜晨月">
+      <meta itemprop="name" content="RevelationML">
+      <meta itemprop="description" content="wir lieben einander wie Mohn und Gedächtnis">
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | RevML">
+      <meta itemprop="name" content="undefined | RevelationML">
       <meta itemprop="description" content="">
     </span>
       <header class="post-header">
@@ -605,7 +1145,7 @@ mjx-container[display="true"] + br {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2023-12-28 01:03:10" itemprop="dateModified" datetime="2023-12-28T01:03:10+08:00">2023-12-28</time>
+      <time title="修改时间：2024-01-06 23:34:41" itemprop="dateModified" datetime="2024-01-06T23:34:41+08:00">2024-01-06</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -657,294 +1197,9 @@ mjx-container[display="true"] + br {
 
 
 
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/12/29/CLAHE/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/lawliet.png">
-      <meta itemprop="name" content="jzsherlock">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="RevML">
-      <meta itemprop="description" content="西风烈，长空雁叫霜晨月">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | RevML">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2022/12/29/CLAHE/" class="post-title-link" itemprop="url">对比度与对比度增强算法：对比度拉伸、直方图均衡与CLAHE</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2022-12-29 21:34:37" itemprop="dateCreated datePublished" datetime="2022-12-29T21:34:37+08:00">2022-12-29</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2023-12-16 21:02:25" itemprop="dateModified" datetime="2023-12-16T21:02:25+08:00">2023-12-16</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Image-Processing/" itemprop="url" rel="index"><span itemprop="name">Image Processing</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Image-Processing/HDR/" itemprop="url" rel="index"><span itemprop="name">HDR</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>图像对比度的定义，以及如何通过LUT拉伸重映射、直方图均衡，以及限制对比度的自适应分区域直方图均衡化算法等方式优化图像对比度。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/12/29/CLAHE/">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/12/29/Bilateral-Filter/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/lawliet.png">
-      <meta itemprop="name" content="jzsherlock">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="RevML">
-      <meta itemprop="description" content="西风烈，长空雁叫霜晨月">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | RevML">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2022/12/29/Bilateral-Filter/" class="post-title-link" itemprop="url">双边滤波原理与改进策略（Bilateral Filtering）</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2022-12-29 13:18:36" itemprop="dateCreated datePublished" datetime="2022-12-29T13:18:36+08:00">2022-12-29</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2023-12-28 01:04:55" itemprop="dateModified" datetime="2023-12-28T01:04:55+08:00">2023-12-28</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Image-Processing/" itemprop="url" rel="index"><span itemprop="name">Image Processing</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Image-Processing/Denoise/" itemprop="url" rel="index"><span itemprop="name">Denoise</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>双边滤波（bilateral filtering）的基本思路是同时考虑将要被滤波的像素点的空域信息（domain）和值域信息（range）。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/12/29/Bilateral-Filter/">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/12/29/Local-Laplacian-Filter/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/lawliet.png">
-      <meta itemprop="name" content="jzsherlock">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="RevML">
-      <meta itemprop="description" content="西风烈，长空雁叫霜晨月">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | RevML">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2022/12/29/Local-Laplacian-Filter/" class="post-title-link" itemprop="url">Local Laplacian Filter 局部拉普拉斯金字塔滤波算法</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2022-12-29 10:23:10" itemprop="dateCreated datePublished" datetime="2022-12-29T10:23:10+08:00">2022-12-29</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2023-12-30 00:31:04" itemprop="dateModified" datetime="2023-12-30T00:31:04+08:00">2023-12-30</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Image-Processing/" itemprop="url" rel="index"><span itemprop="name">Image Processing</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Image-Processing/HDR/" itemprop="url" rel="index"><span itemprop="name">HDR</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <p>通过Gauss金字塔和Laplacian金字塔对原图进行自适应映射，通过重映射曲线定义对于不同梯度值的处理方式，从而实现色调映射、增强/保边平滑、或者风格转换等任务。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/12/29/Local-Laplacian-Filter/">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
+  <nav class="pagination">
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" title="下一页" aria-label="下一页" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+  </nav>
 
 </div>
   </main>
