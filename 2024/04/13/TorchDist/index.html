@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Serif+SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha256-CTSx/A06dm1B063156EVh15m6Y67pAjZZaQc89LLSrU=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.18.2","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="PyTorch训练模型支持分布式训练，主要的实现方式有DataParallel和DistributedDataParallel两种。分布式训练架构分为parameter server和ring-allreduce两种架构，分布式训练需要考虑数据和模型之间的同步，对于不同的并行化策略来说不同进程的同步的处理方式有所不同。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PyTorch训练中的分布式与多进程并行机制">
+<meta property="og:url" content="http://example.com/2024/04/13/TorchDist/index.html">
+<meta property="og:site_name" content="RevelationML">
+<meta property="og:description" content="PyTorch训练模型支持分布式训练，主要的实现方式有DataParallel和DistributedDataParallel两种。分布式训练架构分为parameter server和ring-allreduce两种架构，分布式训练需要考虑数据和模型之间的同步，对于不同的并行化策略来说不同进程的同步的处理方式有所不同。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2024/04/13/TorchDist/72401724-d296d880-371a-11ea-90ab-737f86543df9.png">
+<meta property="article:published_time" content="2024-04-13T10:35:21.000Z">
+<meta property="article:modified_time" content="2024-04-13T10:40:34.293Z">
+<meta property="article:author" content="jzsherlock">
+<meta property="article:tag" content="pytorch">
+<meta property="article:tag" content="multiprocessing">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2024/04/13/TorchDist/72401724-d296d880-371a-11ea-90ab-737f86543df9.png">
+
+
+<link rel="canonical" href="http://example.com/2024/04/13/TorchDist/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2024/04/13/TorchDist/","path":"2024/04/13/TorchDist/","title":"PyTorch训练中的分布式与多进程并行机制"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>PyTorch训练中的分布式与多进程并行机制 | RevelationML</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">RevelationML</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">機器學習默示錄</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#pytorch%E8%AE%AD%E7%BB%83%E4%B8%AD%E7%9A%84%E5%A4%9A%E8%BF%9B%E7%A8%8B%E5%B9%B6%E8%A1%8C%E6%9C%BA%E5%88%B6"><span class="nav-number">1.</span> <span class="nav-text">PyTorch训练中的多进程并行机制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5%E8%BF%9B%E7%A8%8Bprocessing%E4%B8%8E%E7%BA%BF%E7%A8%8Bthread"><span class="nav-number">1.1.</span> <span class="nav-text">基本概念：进程（processing）与线程（thread）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#parameter-server%E4%B8%8Ering-allreduce"><span class="nav-number">1.2.</span> <span class="nav-text">Parameter Server与Ring-allreduce</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E5%B9%B6%E8%A1%8C%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%B9%B6%E8%A1%8C"><span class="nav-number">1.3.</span> <span class="nav-text">模型并行与数据并行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%AD%E7%BB%83%E6%96%B9%E5%BC%8Fdataparallel%E5%92%8Cdistributeddataparallel"><span class="nav-number">1.4.</span> <span class="nav-text">分布式训练方式：DataParallel和DistributedDataParallel</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#dataparallel"><span class="nav-number">1.4.1.</span> <span class="nav-text">DataParallel</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#distributeddataparallel"><span class="nav-number">1.4.2.</span> <span class="nav-text">DistributedDataParallel</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8ddp%E7%9A%84%E6%96%B9%E5%BC%8Ftorch.distributed.launch"><span class="nav-number">1.4.3.</span> <span class="nav-text">启动DDP的方式：torch.distributed.launch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B6%E8%A1%8C%E8%BF%9B%E7%A8%8B%E7%9A%84%E6%89%8B%E5%8A%A8%E5%90%8C%E6%AD%A5torch.distributed.barrier"><span class="nav-number">1.4.4.</span> <span class="nav-text">并行进程的手动同步：torch.distributed.barrier()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E8%AF%BB%E5%8F%96%E7%9A%84%E5%B9%B6%E8%A1%8C%E5%8C%96%E7%AD%96%E7%95%A5distributedsampler%E7%9A%84%E5%8E%9F%E7%90%86%E5%92%8C%E7%94%A8%E6%B3%95"><span class="nav-number">1.4.5.</span> <span class="nav-text">数据读取的并行化策略：DistributedSampler的原理和用法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#reference"><span class="nav-number">1.5.</span> <span class="nav-text">reference</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="jzsherlock"
+      src="/images/lawliet.png">
+  <p class="site-author-name" itemprop="name">jzsherlock</p>
+  <div class="site-description" itemprop="description">wir lieben einander wie Mohn und Gedächtnis</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/jzsherlock4869" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;jzsherlock4869" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:jzsherlock@163.com" title="E-Mail → mailto:jzsherlock@163.com" rel="noopener me" target="_blank"><i class="fas fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/04/13/TorchDist/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/lawliet.png">
+      <meta itemprop="name" content="jzsherlock">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="RevelationML">
+      <meta itemprop="description" content="wir lieben einander wie Mohn und Gedächtnis">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="PyTorch训练中的分布式与多进程并行机制 | RevelationML">
+      <meta itemprop="description" content="PyTorch训练模型支持分布式训练，主要的实现方式有DataParallel和DistributedDataParallel两种。分布式训练架构分为parameter server和ring-allreduce两种架构，分布式训练需要考虑数据和模型之间的同步，对于不同的并行化策略来说不同进程的同步的处理方式有所不同。">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PyTorch训练中的分布式与多进程并行机制
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2024-04-13 18:35:21 / 修改时间：18:40:34" itemprop="dateCreated datePublished" datetime="2024-04-13T18:35:21+08:00">2024-04-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/PyTorch/" itemprop="url" rel="index"><span itemprop="name">PyTorch</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+            <div class="post-description">PyTorch训练模型支持分布式训练，主要的实现方式有DataParallel和DistributedDataParallel两种。分布式训练架构分为parameter server和ring-allreduce两种架构，分布式训练需要考虑数据和模型之间的同步，对于不同的并行化策略来说不同进程的同步的处理方式有所不同。</div>
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="pytorch训练中的多进程并行机制">PyTorch训练中的多进程并行机制</h1>
+<h2 id="基本概念进程processing与线程thread">基本概念：进程（processing）与线程（thread）</h2>
+<p>概念说明：进程是资源分配的基本单元，而线程是CPU任务调度的最小单元。</p>
+<p>一个进程由至少一个线程组成，线程是比进程更加细粒度、轻量的概念。进程内的线程可以独立工作完成子任务，而且由于进程是资源分配的单元，因此进程内的线程可以共享很多资源，比如地址空间和数据，而进程之间通常不能共享。线程的少开销与共享数据提供了便利，但是也带来了一个重要的问题：如果多个线程共同访问某个资源，那么可能会产生线程不安全的问题（比如两个线程同时对一个位置的变量进行自增，由于计算需要时间，线程1取到数值后，还没来得及更新数值，原来的数值就被线程2取到，导致线程2处理的还是旧数据，两个线程的共同效果并不是预期的两者叠加，造成结果的不可预期），因此线程不利于资源的保护。</p>
+<p>线程的这种缺陷引入了新的技术：线程同步与线程安全。最直观的想法就是加锁🔐（互斥锁），即当一个线程用到某个资源时，禁止其他线程再用（阻塞），这样就避免了结果不确定。</p>
+<h2 id="parameter-server与ring-allreduce">Parameter Server与Ring-allreduce</h2>
+<p>Parameter Server架构（PS架构）和Ring-allreduce是分布式训练的两种不同架构。</p>
+<p>PS架构的基本流程：各个node分为两类：server和worker，各个worker分别计算结果，发送给server进行汇总，然后再分发给各个worker。对于训练模型来说，就是各个worker计算梯度，然后发送到server进行平均，然后更新模型参数，最后将得到的新参数再广播到各个worker。这个架构的问题很明显，那就是各个worker都完成后才能更新参数，这样不能最优地利用带宽。</p>
+<p>Ring-allreduce的基本流程：各个node形成一个环路，每个node计算出各自的梯度后，将对应指定的一个梯度参数块向下游传递，并且接受上游传来的与前一个node对应的参数块，全部完成后，每个node对应的参数块都已经获取了全部node的更新，因此是最终版。各个node将自己最终版的参数传到其他node，即可将所有的node更新成相同的参数值，并且其中各个参数块都是最新版。最后，各个node即可用同样的梯度进行模型参数更新。</p>
+<p>下面通过一个简单的示例说明Ring-allreduce具体细节：TODO</p>
+<h2 id="模型并行与数据并行">模型并行与数据并行</h2>
+<ul>
+<li><p>模型并行：将网络的不同层或者不同参数放到不同的卡上计算；</p></li>
+<li><p>数据并行：模型拷贝到各个卡上，将数据分割成不同的子集，各自送到对应卡上计算。</p></li>
+</ul>
+<p>模型并行由于模型本身计算的通常有串行性质，因此存在前后依赖。而数据并行相对简单，因为数据sample可以较好的分开，最后只需要各个模型同步一下更新参数即可（可以同步更新or异步更新）。</p>
+<h2 id="分布式训练方式dataparallel和distributeddataparallel">分布式训练方式：DataParallel和DistributedDataParallel</h2>
+<h3 id="dataparallel">DataParallel</h3>
+<p>DP的操作模式是模型复制，再加上数据分散，每个前向过程需要重新同步复制模型。优点：代码修改简单，只需要用DataParallel将模型包一下：<code>model = nn.DataParallel(model)</code>即可，可以视为从单机单卡的demo最小成本迁移到单机多卡上的策略。缺点：性能问题，DP是单进程多线程（考虑到Python多线程GIL (Global Interpreter Lock，全局解释器锁) 的问题，实际上DP不能最好地利用多卡资源）。</p>
+<h3 id="distributeddataparallel">DistributedDataParallel</h3>
+<p>DDP是多进程并行（对比DP多线程并行），所以模型副本之间没有GIL问题，因此效率通常更高。其启动和运行方式与DP不同。主要步骤：</p>
+<ul>
+<li><p>定义环境变量MASTER_ADDR和MASTER_PORT</p></li>
+<li><p>设置world size，并多线程启动基础训练脚本（什么是world size：由于DDP可以支持多机/node多卡/GPU，如果我们有N个node和G块GPU卡，那么在某一时间运行在所有node上的总进程数就是world size，对应地，运行在某个node上的就是local world size；根据world size，会为每个GPU分配一个rank id，global rank对应于上面的world size，rank对应于local world size，后面我们会看到如何通过rank来识别各个进程并完成对应操作）</p></li>
+<li><p><code>dist.init_process_group</code> 启动一个进程组</p></li>
+<li><p>DDP封装模型，并开始训练过程。其中需要注意data_sampler和sync_bn等相关问题。</p></li>
+</ul>
+<p>DDP训练模型的内部过程大致如下：</p>
+<ul>
+<li><p>首先，通过初始化得到一个process group，后续各种同步都在该group内进行；</p></li>
+<li><p>DDP constructor将rank 0的信息广播到各个进程以保证各个模型副本状态一致，于是每个进程得到一份相同的模型；</p></li>
+<li><p>每个进程创建一个Reducer，用于backward的时候同步梯度；</p></li>
+<li><p>Forward：local数据送入local 模型进行前向传播，计算预测结果；</p></li>
+<li><p>Backward：根据预测结果计算loss，并进行反向传播backward。在反向传播过程中，利用autograd hook实现进程间的同步，具体实现方式：当摸个grad计算完成后，它将被标记为可以reduce（实际上由于DDP将parameters组织成bucket的形式，bucket是reduce的基本单元，因此需要等一个bucket内的所有grad都就绪之后，才会被reduce）。Reducer启动一个异步的allreduce操作对grad进行平均，当allreduce结束时，所有的模型副本的参数的grad都已经相同（即reduce后的均值），因此可以直接进行optimize操作。考虑到初始状态相同，backward后梯度也相同，因此optimize与直接单卡模型的优化过程一致。</p></li>
+</ul>
+<figure>
+<img src="72401724-d296d880-371a-11ea-90ab-737f86543df9.png" alt="ddp_grad_sync.png"><figcaption aria-hidden="true">ddp_grad_sync.png</figcaption>
+</figure>
+<p>init_process_group代码示例：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">torch.distributed.init_process_group(backend=<span class="literal">None</span>, </span><br><span class="line">                    init_method=<span class="literal">None</span>,</span><br><span class="line">                    timeout=<span class="literal">None</span>,</span><br><span class="line">                    world_size=-<span class="number">1</span>,</span><br><span class="line">                    rank=-<span class="number">1</span>,</span><br><span class="line">                    store=<span class="literal">None</span>,</span><br><span class="line">                    group_name=<span class="string">''</span>,</span><br><span class="line">                    pg_options=<span class="literal">None</span>)</span><br></pre></td></tr></table></figure>
+<p>其中，backend通常为gloo或nccl，world_size是参与该任务的进程数，rank是当前进程的rank。</p>
+<h3 id="启动ddp的方式torch.distributed.launch">启动DDP的方式：torch.distributed.launch</h3>
+<p>launch DDP的脚本示例：</p>
+<p>单机多卡（single node multi process）</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">python -m torch.distributed.launch --nproc-per-node=NUM_GPUS_YOU_HAVE</span><br><span class="line">           YOUR_TRAINING_SCRIPT.py (--arg1 --arg2 --arg3 and all other</span><br><span class="line">           arguments of your training script)</span><br></pre></td></tr></table></figure>
+<p>多机多卡（multi node multi process），以两个node为例，两个机器上需要分别启动任务，脚本分别如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># node 1:</span></span><br><span class="line">python -m torch.distributed.launch --nproc-per-node=NUM_GPUS_YOU_HAVE</span><br><span class="line">           --nnodes=2 --node-rank=0 --master-addr=<span class="string">"192.168.1.1"</span></span><br><span class="line">           --master-port=1234 YOUR_TRAINING_SCRIPT.py (--arg1 --arg2 --arg3</span><br><span class="line">           and all other arguments of your training script)</span><br><span class="line"></span><br><span class="line"><span class="comment"># node 2:</span></span><br><span class="line">python -m torch.distributed.launch --nproc-per-node=NUM_GPUS_YOU_HAVE</span><br><span class="line">           --nnodes=2 --node-rank=1 --master-addr=<span class="string">"192.168.1.1"</span></span><br><span class="line">           --master-port=1234 YOUR_TRAINING_SCRIPT.py (--arg1 --arg2 --arg3</span><br><span class="line">           and all other arguments of your training script)</span><br></pre></td></tr></table></figure>
+<h3 id="并行进程的手动同步torch.distributed.barrier">并行进程的手动同步：torch.distributed.barrier()</h3>
+<p><code>dist.barrier()</code> 的功能是实现进程间的同步（synchronize all processes）。其具体实现方式是：当每个进程都走到barrier时，才会继续往后走。也就是说，如果某个或者部分进程走到barrier，那么它/它们将在此等待，直到所有的进程都进入barrier，在一起开启后续流程。这个函数通常用在base process需要load数据或者collect结果的情况（处理时间较长）。此时我们可以将通过barrier将其他进程阻塞，然后让某个rank工作，等它处理完后，让它也进入barrier，此时所有进程都将继续向前进行。一个示例（<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/59760328/how-does-torch-distributed-barrier-work">python - How does torch.distributed.barrier() work - Stack Overflow</a>）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> args.local_rank <span class="keyword">not</span> <span class="keyword">in</span> [-<span class="number">1</span>, <span class="number">0</span>]:</span><br><span class="line">    torch.distributed.barrier()  <span class="comment"># Make sure only the first process in distributed training will download model &amp; vocab</span></span><br><span class="line"></span><br><span class="line">    ... (loads the model <span class="keyword">and</span> the vocabulary)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> args.local_rank == <span class="number">0</span>:</span><br><span class="line">    torch.distributed.barrier()  <span class="comment"># Make sure only the first process in distributed training will download model &amp; vocab</span></span><br></pre></td></tr></table></figure>
+<h3 id="数据读取的并行化策略distributedsampler的原理和用法">数据读取的并行化策略：DistributedSampler的原理和用法</h3>
+<p>DistributedSampler 用于sample数据集的一个子集，并且子集之间不交叉重叠。对于DDP并行训练的情况，每个进程都有一个DistributedSampler，用于sample数据并传到DataLoader。</p>
+<p>示例代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">sampler = DistributedSampler(dataset) <span class="keyword">if</span> is_distributed <span class="keyword">else</span> <span class="literal">None</span></span><br><span class="line">loader = DataLoader(dataset, shuffle=(sampler <span class="keyword">is</span> <span class="literal">None</span>),</span><br><span class="line">                    sampler=sampler)</span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(start_epoch, n_epochs):</span><br><span class="line">    <span class="keyword">if</span> is_distributed:</span><br><span class="line">        sampler.set_epoch(epoch)</span><br><span class="line">    train(loader)</span><br></pre></td></tr></table></figure>
+<h2 id="reference">reference</h2>
+<p><a target="_blank" rel="noopener" href="https://pytorch.org/docs/stable/notes/ddp.html">Distributed Data Parallel — PyTorch 2.2 documentation</a></p>
+<p><a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/beginner/dist_overview.html">PyTorch Distributed Overview — PyTorch Tutorials 2.2.0+cu121 documentation</a></p>
+<p><a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/intermediate/dist_tuto.html">Writing Distributed Applications with PyTorch — PyTorch Tutorials 2.2.0+cu121 documentation</a></p>
+<p>https://github.com/pytorch/examples/blob/main/distributed/ddp/README.md</p>
+<p><a target="_blank" rel="noopener" href="https://pytorch.org/docs/stable/distributed.html">Distributed communication package - torch.distributed — PyTorch 2.2 documentation</a></p>
+<p><a target="_blank" rel="noopener" href="https://pytorch.org/docs/stable/data.html">torch.utils.data — PyTorch 2.2 documentation</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/pytorch/" rel="tag"># pytorch</a>
+              <a href="/tags/multiprocessing/" rel="tag"># multiprocessing</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/01/06/CLIP/" rel="prev" title="CLIP模型基本原理">
+                  <i class="fa fa-angle-left"></i> CLIP模型基本原理
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">jzsherlock</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"all","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+
+</body>
+</html>
