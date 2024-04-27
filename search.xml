@@ -83,47 +83,6 @@ c(\xi, x) = \exp[-\frac{1}{2}(\frac{||\xi - x||}{\sigma_d})^2]
       </tags>
   </entry>
   <entry>
-    <title>对比度与对比度增强算法：对比度拉伸、直方图均衡与CLAHE</title>
-    <url>/2022/12/29/CLAHE/</url>
-    <content><![CDATA[<blockquote>
-<p>TL;DR ：对比度表示图像的明暗对比强度，体现图像的细节对比关系和视觉观感效果；对比度拉伸和直方图均衡都是通过LUT表重映射原图像素取值来获得更好的对比度的图像，其中直方图均衡相当于根据原图直方图分布自适应的对比度拉伸。而CLAHE（限制对比度的自适应直方图均衡）是一种用自适应曲线映射的方式调整图像对比度的方法，它的核心在于即根据待调整区域的直方图设置目标曲线，同时又对曲线的形状进行一定程度的限制，使其更加保守，防止映射函数过于陡峭导致颜色分层等一系列问题。</p>
-</blockquote>
-<h1 id="图像的对比度">图像的对比度</h1>
-<p>一幅图像的对比度主要指的是图像中的明暗关系的对比强度，对比度高意味着图像视觉观感更加生动、通透，画面中的各种内容都可以比较好地被我们获取到；相反，对比度低则通常意味着画面灰蒙，图像中的各个物体取值差不多，不能很好地体现出不同内容之间的明暗关系变化，从而显得画面过平，不够立体和通透；</p>
-<p>从数学角度上来说，对比度可以通过图像中最大值和最小值的之间的差异来进行度量。对于常见的uint8类型的（取值范围为0-255之间的整数）图像来说，其对比度可以通过最大值和最小值之间的差值来衡量，差值越大意味着对比度越高。当然，这种方式并不能完全反映图像的对比度情况，设想一张图像，其绝大部分取值分布在90-100之间，但是在0和255处各自有一个像素取值到，那么实际上这张图的的对比度也是很低的（范围只有10个值的区间！）。这个例子可以看出，对于对比度的考察，最好的方法是可以通过直方图来进行，因为直方图不但反映了取值，而且表现出了取值的像素数量的比例。</p>
-<p>从直方图角度来说，对比度高意味着直方图在整个取值范围上展布的较为均匀，由于图像的显示范围（比如0-255）是离散且有限的，两个数值如果差异较小就会被离散化到同一个bin中，从而无法区分而导致图像损失细节。因此，直方图展布越均匀的图像越能够充分利用图像的显示范围，从而更充足地显示图像中的细节。</p>
-<p>下面展示了几个不同对比度的图像，及其对应的直方图关系，可以直观地对两者建立联系。</p>
-<figure>
-<img src="fig33.png" alt="不同对比度图像的直方图分布" /><figcaption aria-hidden="true">不同对比度图像的直方图分布</figcaption>
-</figure>
-<h1 id="对比度拉伸与直方图均衡">对比度拉伸与直方图均衡</h1>
-<p>由于实际场景中，并不是所有图像都具有较优的对比度，因此如何提升图像的对比度从而优化观感是一个重要的需求。</p>
-<p>从前面提到的对比度与直方图的关系可以很自然地想到，既然低对比度是由于直方图过于集中，那么如果我们可以通过某种方式，将低对比度图像的直方图“拉拽”到图像显示范围两端，那么它的对比度就会被提升。直方图的拉伸（stretching）对应于图像的操作就是对各个像素施加一个重映射，即设置一个LUT表（Look-Up Table），将原始图像中的每个像素的值映射到另一个值，这个LUT表示全局的，也就意味着所有的点都采用同样的映射方式。这种LUT映射可以参考OpenCV中的<a href="https://docs.opencv.org/4.x/d2/de8/group__core__array.html#gab55b8d062b7f5587720ede032d34156f">cv::LUT</a>函数，在OpenCV中可以直接调用这个函数，将原图通过定义好的LUT映射到目标图。</p>
-<p>那么，对比度拉伸的LUT曲线应该具有怎样的性质呢？考虑到应当尽可能将原始图像集中在某段位置[a,b]的直方图拉到两端，那么a应该对应到0，b应该对应到255（以uint8为例）。因此，曲线应当是一个斜率大于1的斜线，并且两端被y=0和y=255所截断。考虑到前面提到过的情况，低对比度分布的集中不一定是其他区域完全为0，因此这个截断的直线应为S形曲线，其对应的物理含义就是将窄带分布进行展宽。</p>
-<p>上述操作就是对比度拉伸的基本操作，在PS、美图秀秀等图像编辑软件中，我们通常可以通过“曲线”功能来设置对比度拉伸的LUT曲线。但是这种方法是需要预先设定LUT表的，而不同的图像所需的最合适的LUT表示不同的，因此需要一种自适应方案，让我们可以自动获取到最合适的LUT表。这就是直方图均衡策略（histogram equalization）。</p>
-<p>直方图均衡的基本目标是通过LUT重映射，使得每张图片处理后都可以理论上实现直方图分布为均匀分布。通过数学推导【TODO】可以发现，当映射曲线为每张图片的CDF（cumulative distribution function，即直方图的积分）时，可以将直方图映射到均匀分布。该操作就是直方图均衡。</p>
-<h1 id="clahe的算法原理与参数">CLAHE的算法原理与参数</h1>
-<p>尽管直方图均衡可以满足自适应调整对比度的目的，但是由于它的映射LUT曲线直接来自原图，这种设定在原图直方图分布比较极端的时候容易出现不鲁棒的情况，具体表现在映射LUT表在局部具有过大或者过小的斜率，即过于陡峭/平缓。斜率过大，也就意味着原图中取值接近的两个值会被映射到差距更大，表现在图像上就是断层现象；相反，斜率过小则多个值映射到同一个值，表现在图像效果上就是涂抹感（细节内容损失）。为了对这种极端情况进行一定的修正，于是产生了CLAHE算法。</p>
-<p>CLAHE算法相对比与上述的直方图均衡，主要有两点改进：</p>
-<ol type="1">
-<li>由全局统计直方图改为局部统计并进行映射，这个改动带来的提升是自然的；</li>
-<li>在原图直方图-&gt;CDF（作为LUT）的计算过程中，对大于某个设定阈值的直方图取值进行限制，并将多出的面积均分到所有取值中，从而使得原图直方图较为平缓，得到的LUT表也尽量减少斜率过大的情况。</li>
-</ol>
-<p>CLAHE的基本计算逻辑示意图如下所示（上方为处理前后的直方图，下方为与上面对应的CDF曲线，可以看到CLAHE处理后的曲线更加平滑无大斜率突变）。</p>
-<figure>
-<img src="fig37.png" alt="CLAHE核心操作" /><figcaption aria-hidden="true">CLAHE核心操作</figcaption>
-</figure>
-]]></content>
-      <categories>
-        <category>Image Processing</category>
-        <category>HDR</category>
-      </categories>
-      <tags>
-        <tag>enhancement</tag>
-        <tag>histogram</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>CLIP模型基本原理</title>
     <url>/2024/01/06/CLIP/</url>
     <content><![CDATA[<p>arxiv：<a href="https://arxiv.org/pdf/2103.00020.pdf">Learning Transferable Visual Models From Natural Language Supervision</a></p>
@@ -297,6 +256,47 @@ c(\xi, x) = \exp[-\frac{1}{2}(\frac{||\xi - x||}{\sigma_d})^2]
       </tags>
   </entry>
   <entry>
+    <title>对比度与对比度增强算法：对比度拉伸、直方图均衡与CLAHE</title>
+    <url>/2022/12/29/CLAHE/</url>
+    <content><![CDATA[<blockquote>
+<p>TL;DR ：对比度表示图像的明暗对比强度，体现图像的细节对比关系和视觉观感效果；对比度拉伸和直方图均衡都是通过LUT表重映射原图像素取值来获得更好的对比度的图像，其中直方图均衡相当于根据原图直方图分布自适应的对比度拉伸。而CLAHE（限制对比度的自适应直方图均衡）是一种用自适应曲线映射的方式调整图像对比度的方法，它的核心在于即根据待调整区域的直方图设置目标曲线，同时又对曲线的形状进行一定程度的限制，使其更加保守，防止映射函数过于陡峭导致颜色分层等一系列问题。</p>
+</blockquote>
+<h1 id="图像的对比度">图像的对比度</h1>
+<p>一幅图像的对比度主要指的是图像中的明暗关系的对比强度，对比度高意味着图像视觉观感更加生动、通透，画面中的各种内容都可以比较好地被我们获取到；相反，对比度低则通常意味着画面灰蒙，图像中的各个物体取值差不多，不能很好地体现出不同内容之间的明暗关系变化，从而显得画面过平，不够立体和通透；</p>
+<p>从数学角度上来说，对比度可以通过图像中最大值和最小值的之间的差异来进行度量。对于常见的uint8类型的（取值范围为0-255之间的整数）图像来说，其对比度可以通过最大值和最小值之间的差值来衡量，差值越大意味着对比度越高。当然，这种方式并不能完全反映图像的对比度情况，设想一张图像，其绝大部分取值分布在90-100之间，但是在0和255处各自有一个像素取值到，那么实际上这张图的的对比度也是很低的（范围只有10个值的区间！）。这个例子可以看出，对于对比度的考察，最好的方法是可以通过直方图来进行，因为直方图不但反映了取值，而且表现出了取值的像素数量的比例。</p>
+<p>从直方图角度来说，对比度高意味着直方图在整个取值范围上展布的较为均匀，由于图像的显示范围（比如0-255）是离散且有限的，两个数值如果差异较小就会被离散化到同一个bin中，从而无法区分而导致图像损失细节。因此，直方图展布越均匀的图像越能够充分利用图像的显示范围，从而更充足地显示图像中的细节。</p>
+<p>下面展示了几个不同对比度的图像，及其对应的直方图关系，可以直观地对两者建立联系。</p>
+<figure>
+<img src="fig33.png" alt="不同对比度图像的直方图分布" /><figcaption aria-hidden="true">不同对比度图像的直方图分布</figcaption>
+</figure>
+<h1 id="对比度拉伸与直方图均衡">对比度拉伸与直方图均衡</h1>
+<p>由于实际场景中，并不是所有图像都具有较优的对比度，因此如何提升图像的对比度从而优化观感是一个重要的需求。</p>
+<p>从前面提到的对比度与直方图的关系可以很自然地想到，既然低对比度是由于直方图过于集中，那么如果我们可以通过某种方式，将低对比度图像的直方图“拉拽”到图像显示范围两端，那么它的对比度就会被提升。直方图的拉伸（stretching）对应于图像的操作就是对各个像素施加一个重映射，即设置一个LUT表（Look-Up Table），将原始图像中的每个像素的值映射到另一个值，这个LUT表示全局的，也就意味着所有的点都采用同样的映射方式。这种LUT映射可以参考OpenCV中的<a href="https://docs.opencv.org/4.x/d2/de8/group__core__array.html#gab55b8d062b7f5587720ede032d34156f">cv::LUT</a>函数，在OpenCV中可以直接调用这个函数，将原图通过定义好的LUT映射到目标图。</p>
+<p>那么，对比度拉伸的LUT曲线应该具有怎样的性质呢？考虑到应当尽可能将原始图像集中在某段位置[a,b]的直方图拉到两端，那么a应该对应到0，b应该对应到255（以uint8为例）。因此，曲线应当是一个斜率大于1的斜线，并且两端被y=0和y=255所截断。考虑到前面提到过的情况，低对比度分布的集中不一定是其他区域完全为0，因此这个截断的直线应为S形曲线，其对应的物理含义就是将窄带分布进行展宽。</p>
+<p>上述操作就是对比度拉伸的基本操作，在PS、美图秀秀等图像编辑软件中，我们通常可以通过“曲线”功能来设置对比度拉伸的LUT曲线。但是这种方法是需要预先设定LUT表的，而不同的图像所需的最合适的LUT表示不同的，因此需要一种自适应方案，让我们可以自动获取到最合适的LUT表。这就是直方图均衡策略（histogram equalization）。</p>
+<p>直方图均衡的基本目标是通过LUT重映射，使得每张图片处理后都可以理论上实现直方图分布为均匀分布。通过数学推导【TODO】可以发现，当映射曲线为每张图片的CDF（cumulative distribution function，即直方图的积分）时，可以将直方图映射到均匀分布。该操作就是直方图均衡。</p>
+<h1 id="clahe的算法原理与参数">CLAHE的算法原理与参数</h1>
+<p>尽管直方图均衡可以满足自适应调整对比度的目的，但是由于它的映射LUT曲线直接来自原图，这种设定在原图直方图分布比较极端的时候容易出现不鲁棒的情况，具体表现在映射LUT表在局部具有过大或者过小的斜率，即过于陡峭/平缓。斜率过大，也就意味着原图中取值接近的两个值会被映射到差距更大，表现在图像上就是断层现象；相反，斜率过小则多个值映射到同一个值，表现在图像效果上就是涂抹感（细节内容损失）。为了对这种极端情况进行一定的修正，于是产生了CLAHE算法。</p>
+<p>CLAHE算法相对比与上述的直方图均衡，主要有两点改进：</p>
+<ol type="1">
+<li>由全局统计直方图改为局部统计并进行映射，这个改动带来的提升是自然的；</li>
+<li>在原图直方图-&gt;CDF（作为LUT）的计算过程中，对大于某个设定阈值的直方图取值进行限制，并将多出的面积均分到所有取值中，从而使得原图直方图较为平缓，得到的LUT表也尽量减少斜率过大的情况。</li>
+</ol>
+<p>CLAHE的基本计算逻辑示意图如下所示（上方为处理前后的直方图，下方为与上面对应的CDF曲线，可以看到CLAHE处理后的曲线更加平滑无大斜率突变）。</p>
+<figure>
+<img src="fig37.png" alt="CLAHE核心操作" /><figcaption aria-hidden="true">CLAHE核心操作</figcaption>
+</figure>
+]]></content>
+      <categories>
+        <category>Image Processing</category>
+        <category>HDR</category>
+      </categories>
+      <tags>
+        <tag>enhancement</tag>
+        <tag>histogram</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>霍夫变换（Hough Transform）与广义霍夫变换（GHT）</title>
     <url>/2024/01/06/Hough/</url>
     <content><![CDATA[
@@ -344,6 +344,107 @@ c(\xi, x) = \exp[-\frac{1}{2}(\frac{||\xi - x||}{\sigma_d})^2]
       </categories>
       <tags>
         <tag>sampling</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Segment-Anything模型（SAM）基本原理与代码分析</title>
+    <url>/2024/01/06/SAM/</url>
+    <content><![CDATA[<h1 id="segment-anything简介">Segment Anything简介</h1>
+<p>SAM即Segment Anything，其目的在于构建一个分割领域的foundation model，用于zero-shot任务，以及交互式prompt分割任务。其结构如下所示。SAM具有大模型的encoder提图像特征，然后通过轻量的prompt encoder和mask decoder将提示转为embedding，并与图像的特征embedding进行交互（仍然是基于transformer），最后输出mask。</p>
+<figure>
+<img src="image-20240301092757321.png" alt="SAM模型整体结构"><figcaption aria-hidden="true">SAM模型整体结构</figcaption>
+</figure>
+<p>SAM作为foundation model，其输出的mask并非为某类或者某些特定类别的物体，而是一个广义的“object”或者“stuff”的概念，因此会有一定的歧义性（比如，将一个人的上半身的一个点作prompt，我们无法判断想要分割的是这个人的衣服，还是整个人等等），因此SAM可以支持multimask输出，并根据需要选择合适的mask。</p>
+<h1 id="sam模型的整体结构与基本风格">SAM模型的整体结构与基本风格</h1>
+<p>设计原则：</p>
+<ul>
+<li><p>遵循scaling law的思路，希望通过大模型、大数据量（data-driven），使得模型学习到（涌现出）类别/任务无关的“object”概念，成为视觉领域的通用模型，而不是针对某类任务或者某种特定类别训练模型</p></li>
+<li><p>可prompt，可以交互输入一定先验信息，利用SAM的语义能力，完成开集分割（SAM无需知道分割的对象的各种类别信息，关于对象的信息被编码到prompt中）</p></li>
+<li><p>prompt的多模态性：支持多种prompt类型，比如point、box、dense mask以及text（需要图文多模module如CLIP支持，将text的隐空间关联到图像的隐空间）</p></li>
+<li><p>zero-shot能力/OpenSet能力：不指定任务，可以直接迁移到众多下游子任务中（当然后续研究发现对于特殊场景，比如医学图像、隐藏目标分割等，还是无法较好处理，但是语义能力仍可用，因此出现了SAMed、Adapter-SAM等方案将其迁移到特殊任务中）</p></li>
+</ul>
+<p>整体训练过程：</p>
+<p>SAM的训练和标注流程比较特殊，它并非通常的先标注-再训练-最后得到结果的这种范式，而是将标注（annotation）和模型训练（training）闭环，形成一个data engine的策略，即一边用标注数据训网络，一边用网络产生标注，从而可以整体运转，获得更多的标注数据训练模型，提高模型的效果。SAM论文中将训练过程主要分为三个阶段：</p>
+<ul>
+<li><p>手工协助阶段（assisted-manual stage）</p></li>
+<li><p>半自动阶段（semi-automatic stage）</p></li>
+<li><p>全自动阶段（full-automatic stage）</p></li>
+</ul>
+<figure>
+<img src="image-20240301093810681.png" alt="SAM的任务、结构与训练过程"><figcaption aria-hidden="true">SAM的任务、结构与训练过程</figcaption>
+</figure>
+<h1 id="代码分析">代码分析</h1>
+<h2 id="encoder细节">Encoder细节</h2>
+<p>分为image encoder和prompt encoder，重点关注prompt encoder。</p>
+<h3 id="imageencodervit">ImageEncoderViT</h3>
+<p>采用ViT架构，对图像做encode，图像固定尺寸输入<code>(1024, 1024)</code> ，最后得到的隐编码尺寸为<code>(64, 64)</code> （patch size 为 16）。在SAM的训练阶段，采用了MAE预训练好的ViT做监督训练。在预测阶段，首先将读入的图像的长边resize到指定尺寸（比如1024），同时保持其aspect ratio。然后，沿着短边方向进行填充，得到正方形图像输入。</p>
+<h3 id="promptencoder">PromptEncoder</h3>
+<ul>
+<li>sparse prompt</li>
+</ul>
+<p>为了适应不同的prompt类型，采用了多种不同的encoder。需要注意的是，即使point和bbox的prompt对于SAM也是进行编码送入网络处理的，因此不一定完全将point分割为指定类别，也不一定bbox prompt后的结果完全在bbox中，在SAM中这两者都只有提示大致位置的功能。</p>
+<p>首先，PrompEncoder中设置了四种不同的embedding层：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">self.num_point_embeddings: <span class="built_in">int</span> = <span class="number">4</span>  <span class="comment"># pos/neg point + 2 box corners</span></span><br><span class="line">point_embeddings = [nn.Embedding(<span class="number">1</span>, embed_dim) <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_point_embeddings)]</span><br><span class="line">self.point_embeddings = nn.ModuleList(point_embeddings)</span><br><span class="line">self.not_a_point_embed = nn.Embedding(<span class="number">1</span>, embed_dim)</span><br></pre></td></tr></table></figure>
+<p>其中，<code>point_embeddings</code> 共有4个，分别表示四种不同的点，即：正样本、负样本、bbox的左上角点、bbox的右下角点。<code>nn.Embedding(1, embed_dim)</code>中的输入为vocab长度为1，即只有一个<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.566ex;" xmlns="http://www.w3.org/2000/svg" width="6.331ex" height="2.262ex" role="img" focusable="false" viewBox="0 -750 2798.4 1000"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mo"><path data-c="5B" d="M118 -250V750H255V710H158V-210H255V-250H118Z"></path></g><g data-mml-node="mn" transform="translate(278,0)"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path></g><g data-mml-node="mo" transform="translate(1000.2,0)"><path data-c="D7" d="M630 29Q630 9 609 9Q604 9 587 25T493 118L389 222L284 117Q178 13 175 11Q171 9 168 9Q160 9 154 15T147 29Q147 36 161 51T255 146L359 250L255 354Q174 435 161 449T147 471Q147 480 153 485T168 490Q173 490 175 489Q178 487 284 383L389 278L493 382Q570 459 587 475T609 491Q630 491 630 471Q630 464 620 453T522 355L418 250L522 145Q606 61 618 48T630 29Z"></path></g><g data-mml-node="mi" transform="translate(2000.4,0)"><path data-c="1D451" d="M366 683Q367 683 438 688T511 694Q523 694 523 686Q523 679 450 384T375 83T374 68Q374 26 402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487H491Q506 153 506 145Q506 140 503 129Q490 79 473 48T445 8T417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157Q33 205 53 255T101 341Q148 398 195 420T280 442Q336 442 364 400Q369 394 369 396Q370 400 396 505T424 616Q424 629 417 632T378 637H357Q351 643 351 645T353 664Q358 683 366 683ZM352 326Q329 405 277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q233 26 290 98L298 109L352 326Z"></path></g><g data-mml-node="mo" transform="translate(2520.4,0)"><path data-c="5D" d="M22 710V750H159V-250H22V-210H119V710H22Z"></path></g></g></g></svg></mjx-container></span>的向量，其中d为embed_dim。这个向量是nn.Embedding的weight，因此随着训练更新。另外，对于没有point prompt的情况，也给一个embedding向量，即<code>not_a_point_embed</code>，这个embedding对应label既不是前景fg也不是背景bg时的占位向量。上述的embedding训练好后，可以用来指示点的类别。</p>
+<p>另一方面，点的位置信息则通过 <strong>位置编码（Position Encoding，PE）</strong> 来实现。PE的目的是将连续的位置信息映射到高频，从而增加不同位置的区分度。这里采用了<code>PositionEmbeddingRandom</code>实现。对正负样本point prompt和bbox的角点prompt进行PE编码后，与上面的点的类型编码结合（相加），得到最终的prompt encoding结果。</p>
+<ol type="1">
+<li>对point prompt（正负样本点）的编码：</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">_embed_points</span>(<span class="params"></span></span><br><span class="line"><span class="params">    self,</span></span><br><span class="line"><span class="params">    points: torch.Tensor,</span></span><br><span class="line"><span class="params">    labels: torch.Tensor,</span></span><br><span class="line"><span class="params">    pad: <span class="built_in">bool</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; torch.Tensor:</span><br><span class="line">    <span class="string">"""Embeds point prompts."""</span></span><br><span class="line">    points = points + <span class="number">0.5</span>  <span class="comment"># Shift to center of pixel</span></span><br><span class="line">    <span class="keyword">if</span> pad:</span><br><span class="line">        padding_point = torch.zeros((points.shape[<span class="number">0</span>], <span class="number">1</span>, <span class="number">2</span>), device=points.device)</span><br><span class="line">        padding_label = -torch.ones((labels.shape[<span class="number">0</span>], <span class="number">1</span>), device=labels.device)</span><br><span class="line">        points = torch.cat([points, padding_point], dim=<span class="number">1</span>)</span><br><span class="line">        labels = torch.cat([labels, padding_label], dim=<span class="number">1</span>)</span><br><span class="line">    point_embedding = self.pe_layer.forward_with_coords(points, self.input_image_size)</span><br><span class="line">    point_embedding[labels == -<span class="number">1</span>] = <span class="number">0.0</span></span><br><span class="line">    point_embedding[labels == -<span class="number">1</span>] += self.not_a_point_embed.weight</span><br><span class="line">    point_embedding[labels == <span class="number">0</span>] += self.point_embeddings[<span class="number">0</span>].weight</span><br><span class="line">    point_embedding[labels == <span class="number">1</span>] += self.point_embeddings[<span class="number">1</span>].weight</span><br><span class="line">    <span class="keyword">return</span> point_embedding</span><br></pre></td></tr></table></figure>
+<ol start="2" type="1">
+<li>对bbox prompt的编码（top-left和bottom-right两角点）</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">_embed_boxes</span>(<span class="params">self, boxes: torch.Tensor</span>) -&gt; torch.Tensor:</span><br><span class="line">    <span class="string">"""Embeds box prompts."""</span></span><br><span class="line">    boxes = boxes + <span class="number">0.5</span>  <span class="comment"># Shift to center of pixel</span></span><br><span class="line">    coords = boxes.reshape(-<span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>)</span><br><span class="line">    corner_embedding = self.pe_layer.forward_with_coords(coords, self.input_image_size)</span><br><span class="line">    corner_embedding[:, <span class="number">0</span>, :] += self.point_embeddings[<span class="number">2</span>].weight</span><br><span class="line">    corner_embedding[:, <span class="number">1</span>, :] += self.point_embeddings[<span class="number">3</span>].weight</span><br><span class="line">    <span class="keyword">return</span> corner_embedding</span><br></pre></td></tr></table></figure>
+<ul>
+<li>dense prompt</li>
+</ul>
+<p>SAM中的dense prompt即mask输入。对于mask的处理，SAM通过一个下采样卷积层将其resize到与image embedding同等大小，然后相加。（由于<code>mask_downscaling</code>下采样了4倍，因此<code>mask_input_size</code> 需要被设置为<code>image_embedding_size</code>的4倍）</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">self.mask_input_size = (<span class="number">4</span> * image_embedding_size[<span class="number">0</span>], <span class="number">4</span> * image_embedding_size[<span class="number">1</span>])</span><br><span class="line">self.mask_downscaling = nn.Sequential(</span><br><span class="line">    nn.Conv2d(<span class="number">1</span>, mask_in_chans // <span class="number">4</span>, kernel_size=<span class="number">2</span>, stride=<span class="number">2</span>),</span><br><span class="line">    LayerNorm2d(mask_in_chans // <span class="number">4</span>),</span><br><span class="line">    activation(),</span><br><span class="line">    nn.Conv2d(mask_in_chans // <span class="number">4</span>, mask_in_chans, kernel_size=<span class="number">2</span>, stride=<span class="number">2</span>),</span><br><span class="line">    LayerNorm2d(mask_in_chans),</span><br><span class="line">    activation(),</span><br><span class="line">    nn.Conv2d(mask_in_chans, embed_dim, kernel_size=<span class="number">1</span>),</span><br><span class="line">)</span><br><span class="line">self.no_mask_embed = nn.Embedding(<span class="number">1</span>, embed_dim)</span><br></pre></td></tr></table></figure>
+<p>同时，对于没有dense mask的情况，也训练一个embedding作为占位符，该向量在spatial（即H和W）方向上进行复制，得到和dense mask embedding相同的张量，与image embedding相加。</p>
+<ul>
+<li>各种prompt的合并组装</li>
+</ul>
+<p>在forward中，对各个prompt进行组装，基本原则是sparse prompt（即各种点）得到的embedding向量沿着dim=1进行cat，即得到<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.566ex;" xmlns="http://www.w3.org/2000/svg" width="10.603ex" height="2.262ex" role="img" focusable="false" viewBox="0 -750 4686.3 1000"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mo"><path data-c="5B" d="M118 -250V750H255V710H158V-210H255V-250H118Z"></path></g><g data-mml-node="mi" transform="translate(278,0)"><path data-c="1D44F" d="M73 647Q73 657 77 670T89 683Q90 683 161 688T234 694Q246 694 246 685T212 542Q204 508 195 472T180 418L176 399Q176 396 182 402Q231 442 283 442Q345 442 383 396T422 280Q422 169 343 79T173 -11Q123 -11 82 27T40 150V159Q40 180 48 217T97 414Q147 611 147 623T109 637Q104 637 101 637H96Q86 637 83 637T76 640T73 647ZM336 325V331Q336 405 275 405Q258 405 240 397T207 376T181 352T163 330L157 322L136 236Q114 150 114 114Q114 66 138 42Q154 26 178 26Q211 26 245 58Q270 81 285 114T318 219Q336 291 336 325Z"></path></g><g data-mml-node="mi" transform="translate(707,0)"><path data-c="1D460" d="M131 289Q131 321 147 354T203 415T300 442Q362 442 390 415T419 355Q419 323 402 308T364 292Q351 292 340 300T328 326Q328 342 337 354T354 372T367 378Q368 378 368 379Q368 382 361 388T336 399T297 405Q249 405 227 379T204 326Q204 301 223 291T278 274T330 259Q396 230 396 163Q396 135 385 107T352 51T289 7T195 -10Q118 -10 86 19T53 87Q53 126 74 143T118 160Q133 160 146 151T160 120Q160 94 142 76T111 58Q109 57 108 57T107 55Q108 52 115 47T146 34T201 27Q237 27 263 38T301 66T318 97T323 122Q323 150 302 164T254 181T195 196T148 231Q131 256 131 289Z"></path></g><g data-mml-node="mo" transform="translate(1176,0)"><path data-c="2C" d="M78 35T78 60T94 103T137 121Q165 121 187 96T210 8Q210 -27 201 -60T180 -117T154 -158T130 -185T117 -194Q113 -194 104 -185T95 -172Q95 -168 106 -156T131 -126T157 -76T173 -3V9L172 8Q170 7 167 6T161 3T152 1T140 0Q113 0 96 17Z"></path></g><g data-mml-node="mi" transform="translate(1620.7,0)"><path data-c="1D45B" d="M21 287Q22 293 24 303T36 341T56 388T89 425T135 442Q171 442 195 424T225 390T231 369Q231 367 232 367L243 378Q304 442 382 442Q436 442 469 415T503 336T465 179T427 52Q427 26 444 26Q450 26 453 27Q482 32 505 65T540 145Q542 153 560 153Q580 153 580 145Q580 144 576 130Q568 101 554 73T508 17T439 -10Q392 -10 371 17T350 73Q350 92 386 193T423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 180T152 343Q153 348 153 366Q153 405 129 405Q91 405 66 305Q60 285 60 284Q58 278 41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mo" transform="translate(2220.7,0)"><path data-c="2C" d="M78 35T78 60T94 103T137 121Q165 121 187 96T210 8Q210 -27 201 -60T180 -117T154 -158T130 -185T117 -194Q113 -194 104 -185T95 -172Q95 -168 106 -156T131 -126T157 -76T173 -3V9L172 8Q170 7 167 6T161 3T152 1T140 0Q113 0 96 17Z"></path></g><g data-mml-node="mi" transform="translate(2665.3,0)"><path data-c="1D451" d="M366 683Q367 683 438 688T511 694Q523 694 523 686Q523 679 450 384T375 83T374 68Q374 26 402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487H491Q506 153 506 145Q506 140 503 129Q490 79 473 48T445 8T417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157Q33 205 53 255T101 341Q148 398 195 420T280 442Q336 442 364 400Q369 394 369 396Q370 400 396 505T424 616Q424 629 417 632T378 637H357Q351 643 351 645T353 664Q358 683 366 683ZM352 326Q329 405 277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q233 26 290 98L298 109L352 326Z"></path></g><g data-mml-node="mi" transform="translate(3185.3,0)"><path data-c="1D456" d="M184 600Q184 624 203 642T247 661Q265 661 277 649T290 619Q290 596 270 577T226 557Q211 557 198 567T184 600ZM21 287Q21 295 30 318T54 369T98 420T158 442Q197 442 223 419T250 357Q250 340 236 301T196 196T154 83Q149 61 149 51Q149 26 166 26Q175 26 185 29T208 43T235 78T260 137Q263 149 265 151T282 153Q302 153 302 143Q302 135 293 112T268 61T223 11T161 -11Q129 -11 102 10T74 74Q74 91 79 106T122 220Q160 321 166 341T173 380Q173 404 156 404H154Q124 404 99 371T61 287Q60 286 59 284T58 281T56 279T53 278T49 278T41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mi" transform="translate(3530.3,0)"><path data-c="1D45A" d="M21 287Q22 293 24 303T36 341T56 388T88 425T132 442T175 435T205 417T221 395T229 376L231 369Q231 367 232 367L243 378Q303 442 384 442Q401 442 415 440T441 433T460 423T475 411T485 398T493 385T497 373T500 364T502 357L510 367Q573 442 659 442Q713 442 746 415T780 336Q780 285 742 178T704 50Q705 36 709 31T724 26Q752 26 776 56T815 138Q818 149 821 151T837 153Q857 153 857 145Q857 144 853 130Q845 101 831 73T785 17T716 -10Q669 -10 648 17T627 73Q627 92 663 193T700 345Q700 404 656 404H651Q565 404 506 303L499 291L466 157Q433 26 428 16Q415 -11 385 -11Q372 -11 364 -4T353 8T350 18Q350 29 384 161L420 307Q423 322 423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 181Q151 335 151 342Q154 357 154 369Q154 405 129 405Q107 405 92 377T69 316T57 280Q55 278 41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mo" transform="translate(4408.3,0)"><path data-c="5D" d="M22 710V750H159V-250H22V-210H119V710H22Z"></path></g></g></g></svg></mjx-container></span> 的结果。其中<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.025ex;" xmlns="http://www.w3.org/2000/svg" width="1.357ex" height="1.025ex" role="img" focusable="false" viewBox="0 -442 600 453"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D45B" d="M21 287Q22 293 24 303T36 341T56 388T89 425T135 442Q171 442 195 424T225 390T231 369Q231 367 232 367L243 378Q304 442 382 442Q436 442 469 415T503 336T465 179T427 52Q427 26 444 26Q450 26 453 27Q482 32 505 65T540 145Q542 153 560 153Q580 153 580 145Q580 144 576 130Q568 101 554 73T508 17T439 -10Q392 -10 371 17T350 73Q350 92 386 193T423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 180T152 343Q153 348 153 366Q153 405 129 405Q91 405 66 305Q60 285 60 284Q58 278 41 278H27Q21 284 21 287Z"></path></g></g></g></svg></mjx-container></span>表示点的数量。而dense mask编码成dense embedding，无dense mask时直接复制<code>no_mask_embed</code>中的权重向量。注意，这里的各种prompt都是可选的（optional）。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params"></span></span><br><span class="line"><span class="params">    self,</span></span><br><span class="line"><span class="params">    points: <span class="type">Optional</span>[<span class="type">Tuple</span>[torch.Tensor, torch.Tensor]],</span></span><br><span class="line"><span class="params">    boxes: <span class="type">Optional</span>[torch.Tensor],</span></span><br><span class="line"><span class="params">    masks: <span class="type">Optional</span>[torch.Tensor],</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="type">Tuple</span>[torch.Tensor, torch.Tensor]:</span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Embeds different types of prompts, returning both sparse and dense</span></span><br><span class="line"><span class="string">    embeddings.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Arguments:</span></span><br><span class="line"><span class="string">        points (tuple(torch.Tensor, torch.Tensor) or none): point coordinates</span></span><br><span class="line"><span class="string">        and labels to embed.</span></span><br><span class="line"><span class="string">        boxes (torch.Tensor or none): boxes to embed</span></span><br><span class="line"><span class="string">        masks (torch.Tensor or none): masks to embed</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        torch.Tensor: sparse embeddings for the points and boxes, with shape</span></span><br><span class="line"><span class="string">        BxNx(embed_dim), where N is determined by the number of input points</span></span><br><span class="line"><span class="string">        and boxes.</span></span><br><span class="line"><span class="string">        torch.Tensor: dense embeddings for the masks, in the shape</span></span><br><span class="line"><span class="string">        Bx(embed_dim)x(embed_H)x(embed_W)</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    bs = self._get_batch_size(points, boxes, masks)</span><br><span class="line">    sparse_embeddings = torch.empty((bs, <span class="number">0</span>, self.embed_dim), device=self._get_device())</span><br><span class="line">    <span class="keyword">if</span> points <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        coords, labels = points</span><br><span class="line">        point_embeddings = self._embed_points(coords, labels, pad=(boxes <span class="keyword">is</span> <span class="literal">None</span>))</span><br><span class="line">        sparse_embeddings = torch.cat([sparse_embeddings, point_embeddings], dim=<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">if</span> boxes <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        box_embeddings = self._embed_boxes(boxes)</span><br><span class="line">        sparse_embeddings = torch.cat([sparse_embeddings, box_embeddings], dim=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> masks <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        dense_embeddings = self._embed_masks(masks)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        dense_embeddings = self.no_mask_embed.weight.reshape(<span class="number">1</span>, -<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>).expand(</span><br><span class="line">            bs, -<span class="number">1</span>, self.image_embedding_size[<span class="number">0</span>], self.image_embedding_size[<span class="number">1</span>]</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> sparse_embeddings, dense_embeddings</span><br></pre></td></tr></table></figure>
+<h2 id="decoder细节">Decoder细节</h2>
+<p>SAM中的<code>MaskDecoder</code> 是一个轻量化的结构，便于交互式分割响应。其基本结构如图所示：</p>
+<figure>
+<img src="sam_decoder.png" alt="MaskDecoder结构示意图"><figcaption aria-hidden="true">MaskDecoder结构示意图</figcaption>
+</figure>
+<p>首先，如前所述，图像被编码成为<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.05ex;" xmlns="http://www.w3.org/2000/svg" width="7.291ex" height="1.581ex" role="img" focusable="false" viewBox="0 -677 3222.4 699"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="36" d="M42 313Q42 476 123 571T303 666Q372 666 402 630T432 550Q432 525 418 510T379 495Q356 495 341 509T326 548Q326 592 373 601Q351 623 311 626Q240 626 194 566Q147 500 147 364L148 360Q153 366 156 373Q197 433 263 433H267Q313 433 348 414Q372 400 396 374T435 317Q456 268 456 210V192Q456 169 451 149Q440 90 387 34T253 -22Q225 -22 199 -14T143 16T92 75T56 172T42 313ZM257 397Q227 397 205 380T171 335T154 278T148 216Q148 133 160 97T198 39Q222 21 251 21Q302 21 329 59Q342 77 347 104T352 209Q352 289 347 316T329 361Q302 397 257 397Z"></path><path data-c="34" d="M462 0Q444 3 333 3Q217 3 199 0H190V46H221Q241 46 248 46T265 48T279 53T286 61Q287 63 287 115V165H28V211L179 442Q332 674 334 675Q336 677 355 677H373L379 671V211H471V165H379V114Q379 73 379 66T385 54Q393 47 442 46H471V0H462ZM293 211V545L74 212L183 211H293Z" transform="translate(500,0)"></path></g><g data-mml-node="mo" transform="translate(1222.2,0)"><path data-c="D7" d="M630 29Q630 9 609 9Q604 9 587 25T493 118L389 222L284 117Q178 13 175 11Q171 9 168 9Q160 9 154 15T147 29Q147 36 161 51T255 146L359 250L255 354Q174 435 161 449T147 471Q147 480 153 485T168 490Q173 490 175 489Q178 487 284 383L389 278L493 382Q570 459 587 475T609 491Q630 491 630 471Q630 464 620 453T522 355L418 250L522 145Q606 61 618 48T630 29Z"></path></g><g data-mml-node="mn" transform="translate(2222.4,0)"><path data-c="36" d="M42 313Q42 476 123 571T303 666Q372 666 402 630T432 550Q432 525 418 510T379 495Q356 495 341 509T326 548Q326 592 373 601Q351 623 311 626Q240 626 194 566Q147 500 147 364L148 360Q153 366 156 373Q197 433 263 433H267Q313 433 348 414Q372 400 396 374T435 317Q456 268 456 210V192Q456 169 451 149Q440 90 387 34T253 -22Q225 -22 199 -14T143 16T92 75T56 172T42 313ZM257 397Q227 397 205 380T171 335T154 278T148 216Q148 133 160 97T198 39Q222 21 251 21Q302 21 329 59Q342 77 347 104T352 209Q352 289 347 316T329 361Q302 397 257 397Z"></path><path data-c="34" d="M462 0Q444 3 333 3Q217 3 199 0H190V46H221Q241 46 248 46T265 48T279 53T286 61Q287 63 287 115V165H28V211L179 442Q332 674 334 675Q336 677 355 677H373L379 671V211H471V165H379V114Q379 73 379 66T385 54Q393 47 442 46H471V0H462ZM293 211V545L74 212L183 211H293Z" transform="translate(500,0)"></path></g></g></g></svg></mjx-container></span>大小的feature，每个feature维度为256。上面的各种prompt最终也被编码成为同样长度（256）的特征向量，作为token与图像进行attention的交互。</p>
+<p>具体实现如下：</p>
+<ol type="1">
+<li>先考虑需要输出的mask和iou的形式，这里：</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">self.num_mask_tokens = num_multimask_outputs + <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p><code>num_multimask_outputs</code> 这里设定为3。由于SAM支持两种模式：multimask和直接输出单一mask，因此需要+1。除了mask的token之外，还需要预测每个mask的iou，因此还需要一个iou token，经过Transformer处理后的iou token接入一个MLP网络，网络输出维度等于mask个数，因此为每个mask分配了一个iou分数。mask token处理后与一个经过Transformer + upscaling（2x transposed conv实现）的处理后的image embedding进行逐像素点乘，最终得到对应的mask。</p>
+<ol start="2" type="1">
+<li>下面来看<code>MaskDecoder</code>输入的形式，以及如何将prompt融合进来的。首先，mask token 和 iou token 也被设置为<code>nn.Embedding</code>层的权重，即：</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">self.iou_token = nn.Embedding(<span class="number">1</span>, transformer_dim)</span><br><span class="line">self.num_mask_tokens = num_multimask_outputs + <span class="number">1</span></span><br><span class="line">self.mask_tokens = nn.Embedding(self.num_mask_tokens, transformer_dim)</span><br></pre></td></tr></table></figure>
+<p>由于我们还有 <code>PromptEncoder</code> 编码来的稀疏和稠密prompt embeding，其中代表mask的稠密embedding比较简单，直接将其与图像embedding相加即可；对于稀疏prompt，将它们与前面的mask token和iou token在通道维度上拼接，得到输入Transformer的tokens：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">output_tokens = torch.cat([self.iou_token.weight, self.mask_tokens.weight], dim=<span class="number">0</span>)</span><br><span class="line">output_tokens = output_tokens.unsqueeze(<span class="number">0</span>).expand(sparse_prompt_embeddings.size(<span class="number">0</span>), -<span class="number">1</span>, -<span class="number">1</span>)</span><br><span class="line">tokens = torch.cat((output_tokens, sparse_prompt_embeddings), dim=<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>接下来，<code>tokens</code>将与<code>image_embeddings</code>（包括dense mask embedding 和 image pe）一起输入到一个<code>TwoWayTransformer</code>，即图中的主体部分。该模块可以对tokens→image embedding和image embeddings → tokens两个方向进行cross attention操作，从而使得image embedding也接受tokens的修正。这个过程如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params"></span></span><br><span class="line"><span class="params">self, queries: Tensor, keys: Tensor, query_pe: Tensor, key_pe: Tensor</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="type">Tuple</span>[Tensor, Tensor]:</span><br><span class="line"><span class="comment"># Self attention block</span></span><br><span class="line"><span class="keyword">if</span> self.skip_first_layer_pe:</span><br><span class="line">    queries = self.self_attn(q=queries, k=queries, v=queries)</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    q = queries + query_pe</span><br><span class="line">    attn_out = self.self_attn(q=q, k=q, v=queries)</span><br><span class="line">    queries = queries + attn_out</span><br><span class="line">queries = self.norm1(queries)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Cross attention block, tokens attending to image embedding</span></span><br><span class="line">q = queries + query_pe</span><br><span class="line">k = keys + key_pe</span><br><span class="line">attn_out = self.cross_attn_token_to_image(q=q, k=k, v=keys)</span><br><span class="line">queries = queries + attn_out</span><br><span class="line">queries = self.norm2(queries)</span><br><span class="line"></span><br><span class="line"><span class="comment"># MLP block</span></span><br><span class="line">mlp_out = self.mlp(queries)</span><br><span class="line">queries = queries + mlp_out</span><br><span class="line">queries = self.norm3(queries)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Cross attention block, image embedding attending to tokens</span></span><br><span class="line">q = queries + query_pe</span><br><span class="line">k = keys + key_pe</span><br><span class="line">attn_out = self.cross_attn_image_to_token(q=k, k=q, v=queries)</span><br><span class="line">keys = keys + attn_out</span><br><span class="line">keys = self.norm4(keys)</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> queries, keys</span><br></pre></td></tr></table></figure>
+<p>可以看出，两次cross attention中，q和k互换，并且k和v来源相同。最开始是一个self-attention，第一个cross attention后还有一个MLP对attention后的token进行更新。</p>
+<ol start="3" type="1">
+<li>最后，mask的输出方式如下：</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># Upscale mask embeddings and predict masks using the mask tokens</span></span><br><span class="line">src = src.transpose(<span class="number">1</span>, <span class="number">2</span>).view(b, c, h, w)</span><br><span class="line">upscaled_embedding = self.output_upscaling(src)</span><br><span class="line">hyper_in_list: <span class="type">List</span>[torch.Tensor] = []</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_mask_tokens):</span><br><span class="line">    hyper_in_list.append(self.output_hypernetworks_mlps[i](mask_tokens_out[:, i, :]))</span><br><span class="line">hyper_in = torch.stack(hyper_in_list, dim=<span class="number">1</span>)</span><br><span class="line">b, c, h, w = upscaled_embedding.shape</span><br><span class="line">masks = (hyper_in @ upscaled_embedding.view(b, c, h * w)).view(b, -<span class="number">1</span>, h, w)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Generate mask quality predictions</span></span><br><span class="line">iou_pred = self.iou_prediction_head(iou_token_out)</span><br></pre></td></tr></table></figure>
+<p>然后，可以根据是否设置输出 multimask，选择合适的输出mask：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># Select the correct mask or masks for output</span></span><br><span class="line"><span class="keyword">if</span> multimask_output:</span><br><span class="line">    mask_slice = <span class="built_in">slice</span>(<span class="number">1</span>, <span class="literal">None</span>)</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    mask_slice = <span class="built_in">slice</span>(<span class="number">0</span>, <span class="number">1</span>)</span><br><span class="line">masks = masks[:, mask_slice, :, :]</span><br><span class="line">iou_pred = iou_pred[:, mask_slice]</span><br></pre></td></tr></table></figure>
+<h1 id="reference">Reference</h1>
+<p><a href="https://arxiv.org/abs/2304.02643">Segment Anything</a></p>
+<p>https://github.com/facebookresearch/segment-anything</p>
+<p>https://segment-anything.com/</p>
+]]></content>
+      <categories>
+        <category>Computer Vision</category>
+        <category>Segmentation</category>
+      </categories>
+      <tags>
+        <tag>segmentation</tag>
+        <tag>large model</tag>
       </tags>
   </entry>
   <entry>
@@ -408,6 +509,79 @@ T(t) = \exp(-\int_{t_{near}}^t\sigma(r(s))ds)
         <tag>3d vision</tag>
         <tag>nerf</tag>
         <tag>pasition encoding</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PyTorch训练中的分布式与多进程并行机制</title>
+    <url>/2024/04/13/TorchDist/</url>
+    <content><![CDATA[<h1 id="pytorch训练中的多进程并行机制">PyTorch训练中的多进程并行机制</h1>
+<h2 id="基本概念进程processing与线程thread">基本概念：进程（processing）与线程（thread）</h2>
+<p>概念说明：进程是资源分配的基本单元，而线程是CPU任务调度的最小单元。</p>
+<p>一个进程由至少一个线程组成，线程是比进程更加细粒度、轻量的概念。进程内的线程可以独立工作完成子任务，而且由于进程是资源分配的单元，因此进程内的线程可以共享很多资源，比如地址空间和数据，而进程之间通常不能共享。线程的少开销与共享数据提供了便利，但是也带来了一个重要的问题：如果多个线程共同访问某个资源，那么可能会产生线程不安全的问题（比如两个线程同时对一个位置的变量进行自增，由于计算需要时间，线程1取到数值后，还没来得及更新数值，原来的数值就被线程2取到，导致线程2处理的还是旧数据，两个线程的共同效果并不是预期的两者叠加，造成结果的不可预期），因此线程不利于资源的保护。</p>
+<p>线程的这种缺陷引入了新的技术：线程同步与线程安全。最直观的想法就是加锁🔐（互斥锁），即当一个线程用到某个资源时，禁止其他线程再用（阻塞），这样就避免了结果不确定。</p>
+<h2 id="parameter-server与ring-allreduce">Parameter Server与Ring-allreduce</h2>
+<p>Parameter Server架构（PS架构）和Ring-allreduce是分布式训练的两种不同架构。</p>
+<p>PS架构的基本流程：各个node分为两类：server和worker，各个worker分别计算结果，发送给server进行汇总，然后再分发给各个worker。对于训练模型来说，就是各个worker计算梯度，然后发送到server进行平均，然后更新模型参数，最后将得到的新参数再广播到各个worker。这个架构的问题很明显，那就是各个worker都完成后才能更新参数，这样不能最优地利用带宽。</p>
+<p>Ring-allreduce的基本流程：各个node形成一个环路，每个node计算出各自的梯度后，将对应指定的一个梯度参数块向下游传递，并且接受上游传来的与前一个node对应的参数块，全部完成后，每个node对应的参数块都已经获取了全部node的更新，因此是最终版。各个node将自己最终版的参数传到其他node，即可将所有的node更新成相同的参数值，并且其中各个参数块都是最新版。最后，各个node即可用同样的梯度进行模型参数更新。</p>
+<p>下面通过一个简单的示例说明Ring-allreduce具体细节：TODO</p>
+<h2 id="模型并行与数据并行">模型并行与数据并行</h2>
+<ul>
+<li><p>模型并行：将网络的不同层或者不同参数放到不同的卡上计算；</p></li>
+<li><p>数据并行：模型拷贝到各个卡上，将数据分割成不同的子集，各自送到对应卡上计算。</p></li>
+</ul>
+<p>模型并行由于模型本身计算的通常有串行性质，因此存在前后依赖。而数据并行相对简单，因为数据sample可以较好的分开，最后只需要各个模型同步一下更新参数即可（可以同步更新or异步更新）。</p>
+<h2 id="分布式训练方式dataparallel和distributeddataparallel">分布式训练方式：DataParallel和DistributedDataParallel</h2>
+<h3 id="dataparallel">DataParallel</h3>
+<p>DP的操作模式是模型复制，再加上数据分散，每个前向过程需要重新同步复制模型。优点：代码修改简单，只需要用DataParallel将模型包一下：<code>model = nn.DataParallel(model)</code>即可，可以视为从单机单卡的demo最小成本迁移到单机多卡上的策略。缺点：性能问题，DP是单进程多线程（考虑到Python多线程GIL (Global Interpreter Lock，全局解释器锁) 的问题，实际上DP不能最好地利用多卡资源）。</p>
+<h3 id="distributeddataparallel">DistributedDataParallel</h3>
+<p>DDP是多进程并行（对比DP多线程并行），所以模型副本之间没有GIL问题，因此效率通常更高。其启动和运行方式与DP不同。主要步骤：</p>
+<ul>
+<li><p>定义环境变量MASTER_ADDR和MASTER_PORT</p></li>
+<li><p>设置world size，并多线程启动基础训练脚本（什么是world size：由于DDP可以支持多机/node多卡/GPU，如果我们有N个node和G块GPU卡，那么在某一时间运行在所有node上的总进程数就是world size，对应地，运行在某个node上的就是local world size；根据world size，会为每个GPU分配一个rank id，global rank对应于上面的world size，rank对应于local world size，后面我们会看到如何通过rank来识别各个进程并完成对应操作）</p></li>
+<li><p><code>dist.init_process_group</code> 启动一个进程组</p></li>
+<li><p>DDP封装模型，并开始训练过程。其中需要注意data_sampler和sync_bn等相关问题。</p></li>
+</ul>
+<p>DDP训练模型的内部过程大致如下：</p>
+<ul>
+<li><p>首先，通过初始化得到一个process group，后续各种同步都在该group内进行；</p></li>
+<li><p>DDP constructor将rank 0的信息广播到各个进程以保证各个模型副本状态一致，于是每个进程得到一份相同的模型；</p></li>
+<li><p>每个进程创建一个Reducer，用于backward的时候同步梯度；</p></li>
+<li><p>Forward：local数据送入local 模型进行前向传播，计算预测结果；</p></li>
+<li><p>Backward：根据预测结果计算loss，并进行反向传播backward。在反向传播过程中，利用autograd hook实现进程间的同步，具体实现方式：当摸个grad计算完成后，它将被标记为可以reduce（实际上由于DDP将parameters组织成bucket的形式，bucket是reduce的基本单元，因此需要等一个bucket内的所有grad都就绪之后，才会被reduce）。Reducer启动一个异步的allreduce操作对grad进行平均，当allreduce结束时，所有的模型副本的参数的grad都已经相同（即reduce后的均值），因此可以直接进行optimize操作。考虑到初始状态相同，backward后梯度也相同，因此optimize与直接单卡模型的优化过程一致。</p></li>
+</ul>
+<figure>
+<img src="72401724-d296d880-371a-11ea-90ab-737f86543df9.png" alt="ddp_grad_sync.png"><figcaption aria-hidden="true">ddp_grad_sync.png</figcaption>
+</figure>
+<p>init_process_group代码示例：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">torch.distributed.init_process_group(backend=<span class="literal">None</span>, </span><br><span class="line">                    init_method=<span class="literal">None</span>,</span><br><span class="line">                    timeout=<span class="literal">None</span>,</span><br><span class="line">                    world_size=-<span class="number">1</span>,</span><br><span class="line">                    rank=-<span class="number">1</span>,</span><br><span class="line">                    store=<span class="literal">None</span>,</span><br><span class="line">                    group_name=<span class="string">''</span>,</span><br><span class="line">                    pg_options=<span class="literal">None</span>)</span><br></pre></td></tr></table></figure>
+<p>其中，backend通常为gloo或nccl，world_size是参与该任务的进程数，rank是当前进程的rank。</p>
+<h3 id="启动ddp的方式torch.distributed.launch">启动DDP的方式：torch.distributed.launch</h3>
+<p>launch DDP的脚本示例：</p>
+<p>单机多卡（single node multi process）</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python -m torch.distributed.launch --nproc-per-node=NUM_GPUS_YOU_HAVE</span><br><span class="line">           YOUR_TRAINING_SCRIPT.py (--arg1 --arg2 --arg3 and all other</span><br><span class="line">           arguments of your training script)</span><br></pre></td></tr></table></figure>
+<p>多机多卡（multi node multi process），以两个node为例，两个机器上需要分别启动任务，脚本分别如下：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># node 1:</span></span><br><span class="line">python -m torch.distributed.launch --nproc-per-node=NUM_GPUS_YOU_HAVE</span><br><span class="line">           --nnodes=2 --node-rank=0 --master-addr=<span class="string">"192.168.1.1"</span></span><br><span class="line">           --master-port=1234 YOUR_TRAINING_SCRIPT.py (--arg1 --arg2 --arg3</span><br><span class="line">           and all other arguments of your training script)</span><br><span class="line"></span><br><span class="line"><span class="comment"># node 2:</span></span><br><span class="line">python -m torch.distributed.launch --nproc-per-node=NUM_GPUS_YOU_HAVE</span><br><span class="line">           --nnodes=2 --node-rank=1 --master-addr=<span class="string">"192.168.1.1"</span></span><br><span class="line">           --master-port=1234 YOUR_TRAINING_SCRIPT.py (--arg1 --arg2 --arg3</span><br><span class="line">           and all other arguments of your training script)</span><br></pre></td></tr></table></figure>
+<h3 id="并行进程的手动同步torch.distributed.barrier">并行进程的手动同步：torch.distributed.barrier()</h3>
+<p><code>dist.barrier()</code> 的功能是实现进程间的同步（synchronize all processes）。其具体实现方式是：当每个进程都走到barrier时，才会继续往后走。也就是说，如果某个或者部分进程走到barrier，那么它/它们将在此等待，直到所有的进程都进入barrier，在一起开启后续流程。这个函数通常用在base process需要load数据或者collect结果的情况（处理时间较长）。此时我们可以将通过barrier将其他进程阻塞，然后让某个rank工作，等它处理完后，让它也进入barrier，此时所有进程都将继续向前进行。一个示例（<a href="https://stackoverflow.com/questions/59760328/how-does-torch-distributed-barrier-work">python - How does torch.distributed.barrier() work - Stack Overflow</a>）：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> args.local_rank <span class="keyword">not</span> <span class="keyword">in</span> [-<span class="number">1</span>, <span class="number">0</span>]:</span><br><span class="line">    torch.distributed.barrier()  <span class="comment"># Make sure only the first process in distributed training will download model &amp; vocab</span></span><br><span class="line"></span><br><span class="line">    ... (loads the model <span class="keyword">and</span> the vocabulary)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> args.local_rank == <span class="number">0</span>:</span><br><span class="line">    torch.distributed.barrier()  <span class="comment"># Make sure only the first process in distributed training will download model &amp; vocab</span></span><br></pre></td></tr></table></figure>
+<h3 id="数据读取的并行化策略distributedsampler的原理和用法">数据读取的并行化策略：DistributedSampler的原理和用法</h3>
+<p>DistributedSampler 用于sample数据集的一个子集，并且子集之间不交叉重叠。对于DDP并行训练的情况，每个进程都有一个DistributedSampler，用于sample数据并传到DataLoader。</p>
+<p>示例代码：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">sampler = DistributedSampler(dataset) <span class="keyword">if</span> is_distributed <span class="keyword">else</span> <span class="literal">None</span></span><br><span class="line">loader = DataLoader(dataset, shuffle=(sampler <span class="keyword">is</span> <span class="literal">None</span>),</span><br><span class="line">                    sampler=sampler)</span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(start_epoch, n_epochs):</span><br><span class="line">    <span class="keyword">if</span> is_distributed:</span><br><span class="line">        sampler.set_epoch(epoch)</span><br><span class="line">    train(loader)</span><br></pre></td></tr></table></figure>
+<h2 id="reference">reference</h2>
+<p><a href="https://pytorch.org/docs/stable/notes/ddp.html">Distributed Data Parallel — PyTorch 2.2 documentation</a></p>
+<p><a href="https://pytorch.org/tutorials/beginner/dist_overview.html">PyTorch Distributed Overview — PyTorch Tutorials 2.2.0+cu121 documentation</a></p>
+<p><a href="https://pytorch.org/tutorials/intermediate/dist_tuto.html">Writing Distributed Applications with PyTorch — PyTorch Tutorials 2.2.0+cu121 documentation</a></p>
+<p>https://github.com/pytorch/examples/blob/main/distributed/ddp/README.md</p>
+<p><a href="https://pytorch.org/docs/stable/distributed.html">Distributed communication package - torch.distributed — PyTorch 2.2 documentation</a></p>
+<p><a href="https://pytorch.org/docs/stable/data.html">torch.utils.data — PyTorch 2.2 documentation</a></p>
+]]></content>
+      <categories>
+        <category>PyTorch</category>
+      </categories>
+      <tags>
+        <tag>pytorch</tag>
+        <tag>multiprocessing</tag>
       </tags>
   </entry>
   <entry>
@@ -533,180 +707,6 @@ F_{1D}\cdot Proj_{1D} = Slice_{2D} \cdot F_{2D}
       <tags>
         <tag>image processing</tag>
         <tag>transformation domain</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Segment-Anything模型（SAM）基本原理与代码分析</title>
-    <url>/2024/01/06/SAM/</url>
-    <content><![CDATA[<h1 id="segment-anything简介">Segment Anything简介</h1>
-<p>SAM即Segment Anything，其目的在于构建一个分割领域的foundation model，用于zero-shot任务，以及交互式prompt分割任务。其结构如下所示。SAM具有大模型的encoder提图像特征，然后通过轻量的prompt encoder和mask decoder将提示转为embedding，并与图像的特征embedding进行交互（仍然是基于transformer），最后输出mask。</p>
-<figure>
-<img src="image-20240301092757321.png" alt="SAM模型整体结构"><figcaption aria-hidden="true">SAM模型整体结构</figcaption>
-</figure>
-<p>SAM作为foundation model，其输出的mask并非为某类或者某些特定类别的物体，而是一个广义的“object”或者“stuff”的概念，因此会有一定的歧义性（比如，将一个人的上半身的一个点作prompt，我们无法判断想要分割的是这个人的衣服，还是整个人等等），因此SAM可以支持multimask输出，并根据需要选择合适的mask。</p>
-<h1 id="sam模型的整体结构与基本风格">SAM模型的整体结构与基本风格</h1>
-<p>设计原则：</p>
-<ul>
-<li><p>遵循scaling law的思路，希望通过大模型、大数据量（data-driven），使得模型学习到（涌现出）类别/任务无关的“object”概念，成为视觉领域的通用模型，而不是针对某类任务或者某种特定类别训练模型</p></li>
-<li><p>可prompt，可以交互输入一定先验信息，利用SAM的语义能力，完成开集分割（SAM无需知道分割的对象的各种类别信息，关于对象的信息被编码到prompt中）</p></li>
-<li><p>prompt的多模态性：支持多种prompt类型，比如point、box、dense mask以及text（需要图文多模module如CLIP支持，将text的隐空间关联到图像的隐空间）</p></li>
-<li><p>zero-shot能力/OpenSet能力：不指定任务，可以直接迁移到众多下游子任务中（当然后续研究发现对于特殊场景，比如医学图像、隐藏目标分割等，还是无法较好处理，但是语义能力仍可用，因此出现了SAMed、Adapter-SAM等方案将其迁移到特殊任务中）</p></li>
-</ul>
-<p>整体训练过程：</p>
-<p>SAM的训练和标注流程比较特殊，它并非通常的先标注-再训练-最后得到结果的这种范式，而是将标注（annotation）和模型训练（training）闭环，形成一个data engine的策略，即一边用标注数据训网络，一边用网络产生标注，从而可以整体运转，获得更多的标注数据训练模型，提高模型的效果。SAM论文中将训练过程主要分为三个阶段：</p>
-<ul>
-<li><p>手工协助阶段（assisted-manual stage）</p></li>
-<li><p>半自动阶段（semi-automatic stage）</p></li>
-<li><p>全自动阶段（full-automatic stage）</p></li>
-</ul>
-<figure>
-<img src="image-20240301093810681.png" alt="SAM的任务、结构与训练过程"><figcaption aria-hidden="true">SAM的任务、结构与训练过程</figcaption>
-</figure>
-<h1 id="代码分析">代码分析</h1>
-<h2 id="encoder细节">Encoder细节</h2>
-<p>分为image encoder和prompt encoder，重点关注prompt encoder。</p>
-<h3 id="imageencodervit">ImageEncoderViT</h3>
-<p>采用ViT架构，对图像做encode，图像固定尺寸输入<code>(1024, 1024)</code> ，最后得到的隐编码尺寸为<code>(64, 64)</code> （patch size 为 16）。在SAM的训练阶段，采用了MAE预训练好的ViT做监督训练。在预测阶段，首先将读入的图像的长边resize到指定尺寸（比如1024），同时保持其aspect ratio。然后，沿着短边方向进行填充，得到正方形图像输入。</p>
-<h3 id="promptencoder">PromptEncoder</h3>
-<ul>
-<li>sparse prompt</li>
-</ul>
-<p>为了适应不同的prompt类型，采用了多种不同的encoder。需要注意的是，即使point和bbox的prompt对于SAM也是进行编码送入网络处理的，因此不一定完全将point分割为指定类别，也不一定bbox prompt后的结果完全在bbox中，在SAM中这两者都只有提示大致位置的功能。</p>
-<p>首先，PrompEncoder中设置了四种不同的embedding层：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">self.num_point_embeddings: <span class="built_in">int</span> = <span class="number">4</span>  <span class="comment"># pos/neg point + 2 box corners</span></span><br><span class="line">point_embeddings = [nn.Embedding(<span class="number">1</span>, embed_dim) <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_point_embeddings)]</span><br><span class="line">self.point_embeddings = nn.ModuleList(point_embeddings)</span><br><span class="line">self.not_a_point_embed = nn.Embedding(<span class="number">1</span>, embed_dim)</span><br></pre></td></tr></table></figure>
-<p>其中，<code>point_embeddings</code> 共有4个，分别表示四种不同的点，即：正样本、负样本、bbox的左上角点、bbox的右下角点。<code>nn.Embedding(1, embed_dim)</code>中的输入为vocab长度为1，即只有一个<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.566ex;" xmlns="http://www.w3.org/2000/svg" width="6.331ex" height="2.262ex" role="img" focusable="false" viewBox="0 -750 2798.4 1000"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mo"><path data-c="5B" d="M118 -250V750H255V710H158V-210H255V-250H118Z"></path></g><g data-mml-node="mn" transform="translate(278,0)"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path></g><g data-mml-node="mo" transform="translate(1000.2,0)"><path data-c="D7" d="M630 29Q630 9 609 9Q604 9 587 25T493 118L389 222L284 117Q178 13 175 11Q171 9 168 9Q160 9 154 15T147 29Q147 36 161 51T255 146L359 250L255 354Q174 435 161 449T147 471Q147 480 153 485T168 490Q173 490 175 489Q178 487 284 383L389 278L493 382Q570 459 587 475T609 491Q630 491 630 471Q630 464 620 453T522 355L418 250L522 145Q606 61 618 48T630 29Z"></path></g><g data-mml-node="mi" transform="translate(2000.4,0)"><path data-c="1D451" d="M366 683Q367 683 438 688T511 694Q523 694 523 686Q523 679 450 384T375 83T374 68Q374 26 402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487H491Q506 153 506 145Q506 140 503 129Q490 79 473 48T445 8T417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157Q33 205 53 255T101 341Q148 398 195 420T280 442Q336 442 364 400Q369 394 369 396Q370 400 396 505T424 616Q424 629 417 632T378 637H357Q351 643 351 645T353 664Q358 683 366 683ZM352 326Q329 405 277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q233 26 290 98L298 109L352 326Z"></path></g><g data-mml-node="mo" transform="translate(2520.4,0)"><path data-c="5D" d="M22 710V750H159V-250H22V-210H119V710H22Z"></path></g></g></g></svg></mjx-container></span>的向量，其中d为embed_dim。这个向量是nn.Embedding的weight，因此随着训练更新。另外，对于没有point prompt的情况，也给一个embedding向量，即<code>not_a_point_embed</code>，这个embedding对应label既不是前景fg也不是背景bg时的占位向量。上述的embedding训练好后，可以用来指示点的类别。</p>
-<p>另一方面，点的位置信息则通过 <strong>位置编码（Position Encoding，PE）</strong> 来实现。PE的目的是将连续的位置信息映射到高频，从而增加不同位置的区分度。这里采用了<code>PositionEmbeddingRandom</code>实现。对正负样本point prompt和bbox的角点prompt进行PE编码后，与上面的点的类型编码结合（相加），得到最终的prompt encoding结果。</p>
-<ol type="1">
-<li>对point prompt（正负样本点）的编码：</li>
-</ol>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">_embed_points</span>(<span class="params"></span></span><br><span class="line"><span class="params">    self,</span></span><br><span class="line"><span class="params">    points: torch.Tensor,</span></span><br><span class="line"><span class="params">    labels: torch.Tensor,</span></span><br><span class="line"><span class="params">    pad: <span class="built_in">bool</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; torch.Tensor:</span><br><span class="line">    <span class="string">"""Embeds point prompts."""</span></span><br><span class="line">    points = points + <span class="number">0.5</span>  <span class="comment"># Shift to center of pixel</span></span><br><span class="line">    <span class="keyword">if</span> pad:</span><br><span class="line">        padding_point = torch.zeros((points.shape[<span class="number">0</span>], <span class="number">1</span>, <span class="number">2</span>), device=points.device)</span><br><span class="line">        padding_label = -torch.ones((labels.shape[<span class="number">0</span>], <span class="number">1</span>), device=labels.device)</span><br><span class="line">        points = torch.cat([points, padding_point], dim=<span class="number">1</span>)</span><br><span class="line">        labels = torch.cat([labels, padding_label], dim=<span class="number">1</span>)</span><br><span class="line">    point_embedding = self.pe_layer.forward_with_coords(points, self.input_image_size)</span><br><span class="line">    point_embedding[labels == -<span class="number">1</span>] = <span class="number">0.0</span></span><br><span class="line">    point_embedding[labels == -<span class="number">1</span>] += self.not_a_point_embed.weight</span><br><span class="line">    point_embedding[labels == <span class="number">0</span>] += self.point_embeddings[<span class="number">0</span>].weight</span><br><span class="line">    point_embedding[labels == <span class="number">1</span>] += self.point_embeddings[<span class="number">1</span>].weight</span><br><span class="line">    <span class="keyword">return</span> point_embedding</span><br></pre></td></tr></table></figure>
-<ol start="2" type="1">
-<li>对bbox prompt的编码（top-left和bottom-right两角点）</li>
-</ol>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">_embed_boxes</span>(<span class="params">self, boxes: torch.Tensor</span>) -&gt; torch.Tensor:</span><br><span class="line">    <span class="string">"""Embeds box prompts."""</span></span><br><span class="line">    boxes = boxes + <span class="number">0.5</span>  <span class="comment"># Shift to center of pixel</span></span><br><span class="line">    coords = boxes.reshape(-<span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>)</span><br><span class="line">    corner_embedding = self.pe_layer.forward_with_coords(coords, self.input_image_size)</span><br><span class="line">    corner_embedding[:, <span class="number">0</span>, :] += self.point_embeddings[<span class="number">2</span>].weight</span><br><span class="line">    corner_embedding[:, <span class="number">1</span>, :] += self.point_embeddings[<span class="number">3</span>].weight</span><br><span class="line">    <span class="keyword">return</span> corner_embedding</span><br></pre></td></tr></table></figure>
-<ul>
-<li>dense prompt</li>
-</ul>
-<p>SAM中的dense prompt即mask输入。对于mask的处理，SAM通过一个下采样卷积层将其resize到与image embedding同等大小，然后相加。（由于<code>mask_downscaling</code>下采样了4倍，因此<code>mask_input_size</code> 需要被设置为<code>image_embedding_size</code>的4倍）</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">self.mask_input_size = (<span class="number">4</span> * image_embedding_size[<span class="number">0</span>], <span class="number">4</span> * image_embedding_size[<span class="number">1</span>])</span><br><span class="line">self.mask_downscaling = nn.Sequential(</span><br><span class="line">    nn.Conv2d(<span class="number">1</span>, mask_in_chans // <span class="number">4</span>, kernel_size=<span class="number">2</span>, stride=<span class="number">2</span>),</span><br><span class="line">    LayerNorm2d(mask_in_chans // <span class="number">4</span>),</span><br><span class="line">    activation(),</span><br><span class="line">    nn.Conv2d(mask_in_chans // <span class="number">4</span>, mask_in_chans, kernel_size=<span class="number">2</span>, stride=<span class="number">2</span>),</span><br><span class="line">    LayerNorm2d(mask_in_chans),</span><br><span class="line">    activation(),</span><br><span class="line">    nn.Conv2d(mask_in_chans, embed_dim, kernel_size=<span class="number">1</span>),</span><br><span class="line">)</span><br><span class="line">self.no_mask_embed = nn.Embedding(<span class="number">1</span>, embed_dim)</span><br></pre></td></tr></table></figure>
-<p>同时，对于没有dense mask的情况，也训练一个embedding作为占位符，该向量在spatial（即H和W）方向上进行复制，得到和dense mask embedding相同的张量，与image embedding相加。</p>
-<ul>
-<li>各种prompt的合并组装</li>
-</ul>
-<p>在forward中，对各个prompt进行组装，基本原则是sparse prompt（即各种点）得到的embedding向量沿着dim=1进行cat，即得到<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.566ex;" xmlns="http://www.w3.org/2000/svg" width="10.603ex" height="2.262ex" role="img" focusable="false" viewBox="0 -750 4686.3 1000"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mo"><path data-c="5B" d="M118 -250V750H255V710H158V-210H255V-250H118Z"></path></g><g data-mml-node="mi" transform="translate(278,0)"><path data-c="1D44F" d="M73 647Q73 657 77 670T89 683Q90 683 161 688T234 694Q246 694 246 685T212 542Q204 508 195 472T180 418L176 399Q176 396 182 402Q231 442 283 442Q345 442 383 396T422 280Q422 169 343 79T173 -11Q123 -11 82 27T40 150V159Q40 180 48 217T97 414Q147 611 147 623T109 637Q104 637 101 637H96Q86 637 83 637T76 640T73 647ZM336 325V331Q336 405 275 405Q258 405 240 397T207 376T181 352T163 330L157 322L136 236Q114 150 114 114Q114 66 138 42Q154 26 178 26Q211 26 245 58Q270 81 285 114T318 219Q336 291 336 325Z"></path></g><g data-mml-node="mi" transform="translate(707,0)"><path data-c="1D460" d="M131 289Q131 321 147 354T203 415T300 442Q362 442 390 415T419 355Q419 323 402 308T364 292Q351 292 340 300T328 326Q328 342 337 354T354 372T367 378Q368 378 368 379Q368 382 361 388T336 399T297 405Q249 405 227 379T204 326Q204 301 223 291T278 274T330 259Q396 230 396 163Q396 135 385 107T352 51T289 7T195 -10Q118 -10 86 19T53 87Q53 126 74 143T118 160Q133 160 146 151T160 120Q160 94 142 76T111 58Q109 57 108 57T107 55Q108 52 115 47T146 34T201 27Q237 27 263 38T301 66T318 97T323 122Q323 150 302 164T254 181T195 196T148 231Q131 256 131 289Z"></path></g><g data-mml-node="mo" transform="translate(1176,0)"><path data-c="2C" d="M78 35T78 60T94 103T137 121Q165 121 187 96T210 8Q210 -27 201 -60T180 -117T154 -158T130 -185T117 -194Q113 -194 104 -185T95 -172Q95 -168 106 -156T131 -126T157 -76T173 -3V9L172 8Q170 7 167 6T161 3T152 1T140 0Q113 0 96 17Z"></path></g><g data-mml-node="mi" transform="translate(1620.7,0)"><path data-c="1D45B" d="M21 287Q22 293 24 303T36 341T56 388T89 425T135 442Q171 442 195 424T225 390T231 369Q231 367 232 367L243 378Q304 442 382 442Q436 442 469 415T503 336T465 179T427 52Q427 26 444 26Q450 26 453 27Q482 32 505 65T540 145Q542 153 560 153Q580 153 580 145Q580 144 576 130Q568 101 554 73T508 17T439 -10Q392 -10 371 17T350 73Q350 92 386 193T423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 180T152 343Q153 348 153 366Q153 405 129 405Q91 405 66 305Q60 285 60 284Q58 278 41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mo" transform="translate(2220.7,0)"><path data-c="2C" d="M78 35T78 60T94 103T137 121Q165 121 187 96T210 8Q210 -27 201 -60T180 -117T154 -158T130 -185T117 -194Q113 -194 104 -185T95 -172Q95 -168 106 -156T131 -126T157 -76T173 -3V9L172 8Q170 7 167 6T161 3T152 1T140 0Q113 0 96 17Z"></path></g><g data-mml-node="mi" transform="translate(2665.3,0)"><path data-c="1D451" d="M366 683Q367 683 438 688T511 694Q523 694 523 686Q523 679 450 384T375 83T374 68Q374 26 402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487H491Q506 153 506 145Q506 140 503 129Q490 79 473 48T445 8T417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157Q33 205 53 255T101 341Q148 398 195 420T280 442Q336 442 364 400Q369 394 369 396Q370 400 396 505T424 616Q424 629 417 632T378 637H357Q351 643 351 645T353 664Q358 683 366 683ZM352 326Q329 405 277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q233 26 290 98L298 109L352 326Z"></path></g><g data-mml-node="mi" transform="translate(3185.3,0)"><path data-c="1D456" d="M184 600Q184 624 203 642T247 661Q265 661 277 649T290 619Q290 596 270 577T226 557Q211 557 198 567T184 600ZM21 287Q21 295 30 318T54 369T98 420T158 442Q197 442 223 419T250 357Q250 340 236 301T196 196T154 83Q149 61 149 51Q149 26 166 26Q175 26 185 29T208 43T235 78T260 137Q263 149 265 151T282 153Q302 153 302 143Q302 135 293 112T268 61T223 11T161 -11Q129 -11 102 10T74 74Q74 91 79 106T122 220Q160 321 166 341T173 380Q173 404 156 404H154Q124 404 99 371T61 287Q60 286 59 284T58 281T56 279T53 278T49 278T41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mi" transform="translate(3530.3,0)"><path data-c="1D45A" d="M21 287Q22 293 24 303T36 341T56 388T88 425T132 442T175 435T205 417T221 395T229 376L231 369Q231 367 232 367L243 378Q303 442 384 442Q401 442 415 440T441 433T460 423T475 411T485 398T493 385T497 373T500 364T502 357L510 367Q573 442 659 442Q713 442 746 415T780 336Q780 285 742 178T704 50Q705 36 709 31T724 26Q752 26 776 56T815 138Q818 149 821 151T837 153Q857 153 857 145Q857 144 853 130Q845 101 831 73T785 17T716 -10Q669 -10 648 17T627 73Q627 92 663 193T700 345Q700 404 656 404H651Q565 404 506 303L499 291L466 157Q433 26 428 16Q415 -11 385 -11Q372 -11 364 -4T353 8T350 18Q350 29 384 161L420 307Q423 322 423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 181Q151 335 151 342Q154 357 154 369Q154 405 129 405Q107 405 92 377T69 316T57 280Q55 278 41 278H27Q21 284 21 287Z"></path></g><g data-mml-node="mo" transform="translate(4408.3,0)"><path data-c="5D" d="M22 710V750H159V-250H22V-210H119V710H22Z"></path></g></g></g></svg></mjx-container></span> 的结果。其中<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.025ex;" xmlns="http://www.w3.org/2000/svg" width="1.357ex" height="1.025ex" role="img" focusable="false" viewBox="0 -442 600 453"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mi"><path data-c="1D45B" d="M21 287Q22 293 24 303T36 341T56 388T89 425T135 442Q171 442 195 424T225 390T231 369Q231 367 232 367L243 378Q304 442 382 442Q436 442 469 415T503 336T465 179T427 52Q427 26 444 26Q450 26 453 27Q482 32 505 65T540 145Q542 153 560 153Q580 153 580 145Q580 144 576 130Q568 101 554 73T508 17T439 -10Q392 -10 371 17T350 73Q350 92 386 193T423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 180T152 343Q153 348 153 366Q153 405 129 405Q91 405 66 305Q60 285 60 284Q58 278 41 278H27Q21 284 21 287Z"></path></g></g></g></svg></mjx-container></span>表示点的数量。而dense mask编码成dense embedding，无dense mask时直接复制<code>no_mask_embed</code>中的权重向量。注意，这里的各种prompt都是可选的（optional）。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params"></span></span><br><span class="line"><span class="params">    self,</span></span><br><span class="line"><span class="params">    points: <span class="type">Optional</span>[<span class="type">Tuple</span>[torch.Tensor, torch.Tensor]],</span></span><br><span class="line"><span class="params">    boxes: <span class="type">Optional</span>[torch.Tensor],</span></span><br><span class="line"><span class="params">    masks: <span class="type">Optional</span>[torch.Tensor],</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="type">Tuple</span>[torch.Tensor, torch.Tensor]:</span><br><span class="line">    <span class="string">"""</span></span><br><span class="line"><span class="string">    Embeds different types of prompts, returning both sparse and dense</span></span><br><span class="line"><span class="string">    embeddings.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Arguments:</span></span><br><span class="line"><span class="string">        points (tuple(torch.Tensor, torch.Tensor) or none): point coordinates</span></span><br><span class="line"><span class="string">        and labels to embed.</span></span><br><span class="line"><span class="string">        boxes (torch.Tensor or none): boxes to embed</span></span><br><span class="line"><span class="string">        masks (torch.Tensor or none): masks to embed</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        torch.Tensor: sparse embeddings for the points and boxes, with shape</span></span><br><span class="line"><span class="string">        BxNx(embed_dim), where N is determined by the number of input points</span></span><br><span class="line"><span class="string">        and boxes.</span></span><br><span class="line"><span class="string">        torch.Tensor: dense embeddings for the masks, in the shape</span></span><br><span class="line"><span class="string">        Bx(embed_dim)x(embed_H)x(embed_W)</span></span><br><span class="line"><span class="string">    """</span></span><br><span class="line">    bs = self._get_batch_size(points, boxes, masks)</span><br><span class="line">    sparse_embeddings = torch.empty((bs, <span class="number">0</span>, self.embed_dim), device=self._get_device())</span><br><span class="line">    <span class="keyword">if</span> points <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        coords, labels = points</span><br><span class="line">        point_embeddings = self._embed_points(coords, labels, pad=(boxes <span class="keyword">is</span> <span class="literal">None</span>))</span><br><span class="line">        sparse_embeddings = torch.cat([sparse_embeddings, point_embeddings], dim=<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">if</span> boxes <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        box_embeddings = self._embed_boxes(boxes)</span><br><span class="line">        sparse_embeddings = torch.cat([sparse_embeddings, box_embeddings], dim=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> masks <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        dense_embeddings = self._embed_masks(masks)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        dense_embeddings = self.no_mask_embed.weight.reshape(<span class="number">1</span>, -<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>).expand(</span><br><span class="line">            bs, -<span class="number">1</span>, self.image_embedding_size[<span class="number">0</span>], self.image_embedding_size[<span class="number">1</span>]</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> sparse_embeddings, dense_embeddings</span><br></pre></td></tr></table></figure>
-<h2 id="decoder细节">Decoder细节</h2>
-<p>SAM中的<code>MaskDecoder</code> 是一个轻量化的结构，便于交互式分割响应。其基本结构如图所示：</p>
-<figure>
-<img src="sam_decoder.png" alt="MaskDecoder结构示意图"><figcaption aria-hidden="true">MaskDecoder结构示意图</figcaption>
-</figure>
-<p>首先，如前所述，图像被编码成为<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: -0.05ex;" xmlns="http://www.w3.org/2000/svg" width="7.291ex" height="1.581ex" role="img" focusable="false" viewBox="0 -677 3222.4 699"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="36" d="M42 313Q42 476 123 571T303 666Q372 666 402 630T432 550Q432 525 418 510T379 495Q356 495 341 509T326 548Q326 592 373 601Q351 623 311 626Q240 626 194 566Q147 500 147 364L148 360Q153 366 156 373Q197 433 263 433H267Q313 433 348 414Q372 400 396 374T435 317Q456 268 456 210V192Q456 169 451 149Q440 90 387 34T253 -22Q225 -22 199 -14T143 16T92 75T56 172T42 313ZM257 397Q227 397 205 380T171 335T154 278T148 216Q148 133 160 97T198 39Q222 21 251 21Q302 21 329 59Q342 77 347 104T352 209Q352 289 347 316T329 361Q302 397 257 397Z"></path><path data-c="34" d="M462 0Q444 3 333 3Q217 3 199 0H190V46H221Q241 46 248 46T265 48T279 53T286 61Q287 63 287 115V165H28V211L179 442Q332 674 334 675Q336 677 355 677H373L379 671V211H471V165H379V114Q379 73 379 66T385 54Q393 47 442 46H471V0H462ZM293 211V545L74 212L183 211H293Z" transform="translate(500,0)"></path></g><g data-mml-node="mo" transform="translate(1222.2,0)"><path data-c="D7" d="M630 29Q630 9 609 9Q604 9 587 25T493 118L389 222L284 117Q178 13 175 11Q171 9 168 9Q160 9 154 15T147 29Q147 36 161 51T255 146L359 250L255 354Q174 435 161 449T147 471Q147 480 153 485T168 490Q173 490 175 489Q178 487 284 383L389 278L493 382Q570 459 587 475T609 491Q630 491 630 471Q630 464 620 453T522 355L418 250L522 145Q606 61 618 48T630 29Z"></path></g><g data-mml-node="mn" transform="translate(2222.4,0)"><path data-c="36" d="M42 313Q42 476 123 571T303 666Q372 666 402 630T432 550Q432 525 418 510T379 495Q356 495 341 509T326 548Q326 592 373 601Q351 623 311 626Q240 626 194 566Q147 500 147 364L148 360Q153 366 156 373Q197 433 263 433H267Q313 433 348 414Q372 400 396 374T435 317Q456 268 456 210V192Q456 169 451 149Q440 90 387 34T253 -22Q225 -22 199 -14T143 16T92 75T56 172T42 313ZM257 397Q227 397 205 380T171 335T154 278T148 216Q148 133 160 97T198 39Q222 21 251 21Q302 21 329 59Q342 77 347 104T352 209Q352 289 347 316T329 361Q302 397 257 397Z"></path><path data-c="34" d="M462 0Q444 3 333 3Q217 3 199 0H190V46H221Q241 46 248 46T265 48T279 53T286 61Q287 63 287 115V165H28V211L179 442Q332 674 334 675Q336 677 355 677H373L379 671V211H471V165H379V114Q379 73 379 66T385 54Q393 47 442 46H471V0H462ZM293 211V545L74 212L183 211H293Z" transform="translate(500,0)"></path></g></g></g></svg></mjx-container></span>大小的feature，每个feature维度为256。上面的各种prompt最终也被编码成为同样长度（256）的特征向量，作为token与图像进行attention的交互。</p>
-<p>具体实现如下：</p>
-<ol type="1">
-<li>先考虑需要输出的mask和iou的形式，这里：</li>
-</ol>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">self.num_mask_tokens = num_multimask_outputs + <span class="number">1</span></span><br></pre></td></tr></table></figure>
-<p><code>num_multimask_outputs</code> 这里设定为3。由于SAM支持两种模式：multimask和直接输出单一mask，因此需要+1。除了mask的token之外，还需要预测每个mask的iou，因此还需要一个iou token，经过Transformer处理后的iou token接入一个MLP网络，网络输出维度等于mask个数，因此为每个mask分配了一个iou分数。mask token处理后与一个经过Transformer + upscaling（2x transposed conv实现）的处理后的image embedding进行逐像素点乘，最终得到对应的mask。</p>
-<ol start="2" type="1">
-<li>下面来看<code>MaskDecoder</code>输入的形式，以及如何将prompt融合进来的。首先，mask token 和 iou token 也被设置为<code>nn.Embedding</code>层的权重，即：</li>
-</ol>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">self.iou_token = nn.Embedding(<span class="number">1</span>, transformer_dim)</span><br><span class="line">self.num_mask_tokens = num_multimask_outputs + <span class="number">1</span></span><br><span class="line">self.mask_tokens = nn.Embedding(self.num_mask_tokens, transformer_dim)</span><br></pre></td></tr></table></figure>
-<p>由于我们还有 <code>PromptEncoder</code> 编码来的稀疏和稠密prompt embeding，其中代表mask的稠密embedding比较简单，直接将其与图像embedding相加即可；对于稀疏prompt，将它们与前面的mask token和iou token在通道维度上拼接，得到输入Transformer的tokens：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">output_tokens = torch.cat([self.iou_token.weight, self.mask_tokens.weight], dim=<span class="number">0</span>)</span><br><span class="line">output_tokens = output_tokens.unsqueeze(<span class="number">0</span>).expand(sparse_prompt_embeddings.size(<span class="number">0</span>), -<span class="number">1</span>, -<span class="number">1</span>)</span><br><span class="line">tokens = torch.cat((output_tokens, sparse_prompt_embeddings), dim=<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
-<p>接下来，<code>tokens</code>将与<code>image_embeddings</code>（包括dense mask embedding 和 image pe）一起输入到一个<code>TwoWayTransformer</code>，即图中的主体部分。该模块可以对tokens→image embedding和image embeddings → tokens两个方向进行cross attention操作，从而使得image embedding也接受tokens的修正。这个过程如下：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params"></span></span><br><span class="line"><span class="params">self, queries: Tensor, keys: Tensor, query_pe: Tensor, key_pe: Tensor</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="type">Tuple</span>[Tensor, Tensor]:</span><br><span class="line"><span class="comment"># Self attention block</span></span><br><span class="line"><span class="keyword">if</span> self.skip_first_layer_pe:</span><br><span class="line">    queries = self.self_attn(q=queries, k=queries, v=queries)</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    q = queries + query_pe</span><br><span class="line">    attn_out = self.self_attn(q=q, k=q, v=queries)</span><br><span class="line">    queries = queries + attn_out</span><br><span class="line">queries = self.norm1(queries)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Cross attention block, tokens attending to image embedding</span></span><br><span class="line">q = queries + query_pe</span><br><span class="line">k = keys + key_pe</span><br><span class="line">attn_out = self.cross_attn_token_to_image(q=q, k=k, v=keys)</span><br><span class="line">queries = queries + attn_out</span><br><span class="line">queries = self.norm2(queries)</span><br><span class="line"></span><br><span class="line"><span class="comment"># MLP block</span></span><br><span class="line">mlp_out = self.mlp(queries)</span><br><span class="line">queries = queries + mlp_out</span><br><span class="line">queries = self.norm3(queries)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Cross attention block, image embedding attending to tokens</span></span><br><span class="line">q = queries + query_pe</span><br><span class="line">k = keys + key_pe</span><br><span class="line">attn_out = self.cross_attn_image_to_token(q=k, k=q, v=queries)</span><br><span class="line">keys = keys + attn_out</span><br><span class="line">keys = self.norm4(keys)</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> queries, keys</span><br></pre></td></tr></table></figure>
-<p>可以看出，两次cross attention中，q和k互换，并且k和v来源相同。最开始是一个self-attention，第一个cross attention后还有一个MLP对attention后的token进行更新。</p>
-<ol start="3" type="1">
-<li>最后，mask的输出方式如下：</li>
-</ol>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># Upscale mask embeddings and predict masks using the mask tokens</span></span><br><span class="line">src = src.transpose(<span class="number">1</span>, <span class="number">2</span>).view(b, c, h, w)</span><br><span class="line">upscaled_embedding = self.output_upscaling(src)</span><br><span class="line">hyper_in_list: <span class="type">List</span>[torch.Tensor] = []</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(self.num_mask_tokens):</span><br><span class="line">    hyper_in_list.append(self.output_hypernetworks_mlps[i](mask_tokens_out[:, i, :]))</span><br><span class="line">hyper_in = torch.stack(hyper_in_list, dim=<span class="number">1</span>)</span><br><span class="line">b, c, h, w = upscaled_embedding.shape</span><br><span class="line">masks = (hyper_in @ upscaled_embedding.view(b, c, h * w)).view(b, -<span class="number">1</span>, h, w)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Generate mask quality predictions</span></span><br><span class="line">iou_pred = self.iou_prediction_head(iou_token_out)</span><br></pre></td></tr></table></figure>
-<p>然后，可以根据是否设置输出 multimask，选择合适的输出mask：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># Select the correct mask or masks for output</span></span><br><span class="line"><span class="keyword">if</span> multimask_output:</span><br><span class="line">    mask_slice = <span class="built_in">slice</span>(<span class="number">1</span>, <span class="literal">None</span>)</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    mask_slice = <span class="built_in">slice</span>(<span class="number">0</span>, <span class="number">1</span>)</span><br><span class="line">masks = masks[:, mask_slice, :, :]</span><br><span class="line">iou_pred = iou_pred[:, mask_slice]</span><br></pre></td></tr></table></figure>
-<h1 id="reference">Reference</h1>
-<p><a href="https://arxiv.org/abs/2304.02643">Segment Anything</a></p>
-<p>https://github.com/facebookresearch/segment-anything</p>
-<p>https://segment-anything.com/</p>
-]]></content>
-      <categories>
-        <category>Computer Vision</category>
-        <category>Segmentation</category>
-      </categories>
-      <tags>
-        <tag>segmentation</tag>
-        <tag>large model</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>PyTorch训练中的分布式与多进程并行机制</title>
-    <url>/2024/04/13/TorchDist/</url>
-    <content><![CDATA[<h1 id="pytorch训练中的多进程并行机制">PyTorch训练中的多进程并行机制</h1>
-<h2 id="基本概念进程processing与线程thread">基本概念：进程（processing）与线程（thread）</h2>
-<p>概念说明：进程是资源分配的基本单元，而线程是CPU任务调度的最小单元。</p>
-<p>一个进程由至少一个线程组成，线程是比进程更加细粒度、轻量的概念。进程内的线程可以独立工作完成子任务，而且由于进程是资源分配的单元，因此进程内的线程可以共享很多资源，比如地址空间和数据，而进程之间通常不能共享。线程的少开销与共享数据提供了便利，但是也带来了一个重要的问题：如果多个线程共同访问某个资源，那么可能会产生线程不安全的问题（比如两个线程同时对一个位置的变量进行自增，由于计算需要时间，线程1取到数值后，还没来得及更新数值，原来的数值就被线程2取到，导致线程2处理的还是旧数据，两个线程的共同效果并不是预期的两者叠加，造成结果的不可预期），因此线程不利于资源的保护。</p>
-<p>线程的这种缺陷引入了新的技术：线程同步与线程安全。最直观的想法就是加锁🔐（互斥锁），即当一个线程用到某个资源时，禁止其他线程再用（阻塞），这样就避免了结果不确定。</p>
-<h2 id="parameter-server与ring-allreduce">Parameter Server与Ring-allreduce</h2>
-<p>Parameter Server架构（PS架构）和Ring-allreduce是分布式训练的两种不同架构。</p>
-<p>PS架构的基本流程：各个node分为两类：server和worker，各个worker分别计算结果，发送给server进行汇总，然后再分发给各个worker。对于训练模型来说，就是各个worker计算梯度，然后发送到server进行平均，然后更新模型参数，最后将得到的新参数再广播到各个worker。这个架构的问题很明显，那就是各个worker都完成后才能更新参数，这样不能最优地利用带宽。</p>
-<p>Ring-allreduce的基本流程：各个node形成一个环路，每个node计算出各自的梯度后，将对应指定的一个梯度参数块向下游传递，并且接受上游传来的与前一个node对应的参数块，全部完成后，每个node对应的参数块都已经获取了全部node的更新，因此是最终版。各个node将自己最终版的参数传到其他node，即可将所有的node更新成相同的参数值，并且其中各个参数块都是最新版。最后，各个node即可用同样的梯度进行模型参数更新。</p>
-<p>下面通过一个简单的示例说明Ring-allreduce具体细节：TODO</p>
-<h2 id="模型并行与数据并行">模型并行与数据并行</h2>
-<ul>
-<li><p>模型并行：将网络的不同层或者不同参数放到不同的卡上计算；</p></li>
-<li><p>数据并行：模型拷贝到各个卡上，将数据分割成不同的子集，各自送到对应卡上计算。</p></li>
-</ul>
-<p>模型并行由于模型本身计算的通常有串行性质，因此存在前后依赖。而数据并行相对简单，因为数据sample可以较好的分开，最后只需要各个模型同步一下更新参数即可（可以同步更新or异步更新）。</p>
-<h2 id="分布式训练方式dataparallel和distributeddataparallel">分布式训练方式：DataParallel和DistributedDataParallel</h2>
-<h3 id="dataparallel">DataParallel</h3>
-<p>DP的操作模式是模型复制，再加上数据分散，每个前向过程需要重新同步复制模型。优点：代码修改简单，只需要用DataParallel将模型包一下：<code>model = nn.DataParallel(model)</code>即可，可以视为从单机单卡的demo最小成本迁移到单机多卡上的策略。缺点：性能问题，DP是单进程多线程（考虑到Python多线程GIL (Global Interpreter Lock，全局解释器锁) 的问题，实际上DP不能最好地利用多卡资源）。</p>
-<h3 id="distributeddataparallel">DistributedDataParallel</h3>
-<p>DDP是多进程并行（对比DP多线程并行），所以模型副本之间没有GIL问题，因此效率通常更高。其启动和运行方式与DP不同。主要步骤：</p>
-<ul>
-<li><p>定义环境变量MASTER_ADDR和MASTER_PORT</p></li>
-<li><p>设置world size，并多线程启动基础训练脚本（什么是world size：由于DDP可以支持多机/node多卡/GPU，如果我们有N个node和G块GPU卡，那么在某一时间运行在所有node上的总进程数就是world size，对应地，运行在某个node上的就是local world size；根据world size，会为每个GPU分配一个rank id，global rank对应于上面的world size，rank对应于local world size，后面我们会看到如何通过rank来识别各个进程并完成对应操作）</p></li>
-<li><p><code>dist.init_process_group</code> 启动一个进程组</p></li>
-<li><p>DDP封装模型，并开始训练过程。其中需要注意data_sampler和sync_bn等相关问题。</p></li>
-</ul>
-<p>DDP训练模型的内部过程大致如下：</p>
-<ul>
-<li><p>首先，通过初始化得到一个process group，后续各种同步都在该group内进行；</p></li>
-<li><p>DDP constructor将rank 0的信息广播到各个进程以保证各个模型副本状态一致，于是每个进程得到一份相同的模型；</p></li>
-<li><p>每个进程创建一个Reducer，用于backward的时候同步梯度；</p></li>
-<li><p>Forward：local数据送入local 模型进行前向传播，计算预测结果；</p></li>
-<li><p>Backward：根据预测结果计算loss，并进行反向传播backward。在反向传播过程中，利用autograd hook实现进程间的同步，具体实现方式：当摸个grad计算完成后，它将被标记为可以reduce（实际上由于DDP将parameters组织成bucket的形式，bucket是reduce的基本单元，因此需要等一个bucket内的所有grad都就绪之后，才会被reduce）。Reducer启动一个异步的allreduce操作对grad进行平均，当allreduce结束时，所有的模型副本的参数的grad都已经相同（即reduce后的均值），因此可以直接进行optimize操作。考虑到初始状态相同，backward后梯度也相同，因此optimize与直接单卡模型的优化过程一致。</p></li>
-</ul>
-<figure>
-<img src="72401724-d296d880-371a-11ea-90ab-737f86543df9.png" alt="ddp_grad_sync.png"><figcaption aria-hidden="true">ddp_grad_sync.png</figcaption>
-</figure>
-<p>init_process_group代码示例：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">torch.distributed.init_process_group(backend=<span class="literal">None</span>, </span><br><span class="line">                    init_method=<span class="literal">None</span>,</span><br><span class="line">                    timeout=<span class="literal">None</span>,</span><br><span class="line">                    world_size=-<span class="number">1</span>,</span><br><span class="line">                    rank=-<span class="number">1</span>,</span><br><span class="line">                    store=<span class="literal">None</span>,</span><br><span class="line">                    group_name=<span class="string">''</span>,</span><br><span class="line">                    pg_options=<span class="literal">None</span>)</span><br></pre></td></tr></table></figure>
-<p>其中，backend通常为gloo或nccl，world_size是参与该任务的进程数，rank是当前进程的rank。</p>
-<h3 id="启动ddp的方式torch.distributed.launch">启动DDP的方式：torch.distributed.launch</h3>
-<p>launch DDP的脚本示例：</p>
-<p>单机多卡（single node multi process）</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">python -m torch.distributed.launch --nproc-per-node=NUM_GPUS_YOU_HAVE</span><br><span class="line">           YOUR_TRAINING_SCRIPT.py (--arg1 --arg2 --arg3 and all other</span><br><span class="line">           arguments of your training script)</span><br></pre></td></tr></table></figure>
-<p>多机多卡（multi node multi process），以两个node为例，两个机器上需要分别启动任务，脚本分别如下：</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># node 1:</span></span><br><span class="line">python -m torch.distributed.launch --nproc-per-node=NUM_GPUS_YOU_HAVE</span><br><span class="line">           --nnodes=2 --node-rank=0 --master-addr=<span class="string">"192.168.1.1"</span></span><br><span class="line">           --master-port=1234 YOUR_TRAINING_SCRIPT.py (--arg1 --arg2 --arg3</span><br><span class="line">           and all other arguments of your training script)</span><br><span class="line"></span><br><span class="line"><span class="comment"># node 2:</span></span><br><span class="line">python -m torch.distributed.launch --nproc-per-node=NUM_GPUS_YOU_HAVE</span><br><span class="line">           --nnodes=2 --node-rank=1 --master-addr=<span class="string">"192.168.1.1"</span></span><br><span class="line">           --master-port=1234 YOUR_TRAINING_SCRIPT.py (--arg1 --arg2 --arg3</span><br><span class="line">           and all other arguments of your training script)</span><br></pre></td></tr></table></figure>
-<h3 id="并行进程的手动同步torch.distributed.barrier">并行进程的手动同步：torch.distributed.barrier()</h3>
-<p><code>dist.barrier()</code> 的功能是实现进程间的同步（synchronize all processes）。其具体实现方式是：当每个进程都走到barrier时，才会继续往后走。也就是说，如果某个或者部分进程走到barrier，那么它/它们将在此等待，直到所有的进程都进入barrier，在一起开启后续流程。这个函数通常用在base process需要load数据或者collect结果的情况（处理时间较长）。此时我们可以将通过barrier将其他进程阻塞，然后让某个rank工作，等它处理完后，让它也进入barrier，此时所有进程都将继续向前进行。一个示例（<a href="https://stackoverflow.com/questions/59760328/how-does-torch-distributed-barrier-work">python - How does torch.distributed.barrier() work - Stack Overflow</a>）：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> args.local_rank <span class="keyword">not</span> <span class="keyword">in</span> [-<span class="number">1</span>, <span class="number">0</span>]:</span><br><span class="line">    torch.distributed.barrier()  <span class="comment"># Make sure only the first process in distributed training will download model &amp; vocab</span></span><br><span class="line"></span><br><span class="line">    ... (loads the model <span class="keyword">and</span> the vocabulary)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> args.local_rank == <span class="number">0</span>:</span><br><span class="line">    torch.distributed.barrier()  <span class="comment"># Make sure only the first process in distributed training will download model &amp; vocab</span></span><br></pre></td></tr></table></figure>
-<h3 id="数据读取的并行化策略distributedsampler的原理和用法">数据读取的并行化策略：DistributedSampler的原理和用法</h3>
-<p>DistributedSampler 用于sample数据集的一个子集，并且子集之间不交叉重叠。对于DDP并行训练的情况，每个进程都有一个DistributedSampler，用于sample数据并传到DataLoader。</p>
-<p>示例代码：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">sampler = DistributedSampler(dataset) <span class="keyword">if</span> is_distributed <span class="keyword">else</span> <span class="literal">None</span></span><br><span class="line">loader = DataLoader(dataset, shuffle=(sampler <span class="keyword">is</span> <span class="literal">None</span>),</span><br><span class="line">                    sampler=sampler)</span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(start_epoch, n_epochs):</span><br><span class="line">    <span class="keyword">if</span> is_distributed:</span><br><span class="line">        sampler.set_epoch(epoch)</span><br><span class="line">    train(loader)</span><br></pre></td></tr></table></figure>
-<h2 id="reference">reference</h2>
-<p><a href="https://pytorch.org/docs/stable/notes/ddp.html">Distributed Data Parallel — PyTorch 2.2 documentation</a></p>
-<p><a href="https://pytorch.org/tutorials/beginner/dist_overview.html">PyTorch Distributed Overview — PyTorch Tutorials 2.2.0+cu121 documentation</a></p>
-<p><a href="https://pytorch.org/tutorials/intermediate/dist_tuto.html">Writing Distributed Applications with PyTorch — PyTorch Tutorials 2.2.0+cu121 documentation</a></p>
-<p>https://github.com/pytorch/examples/blob/main/distributed/ddp/README.md</p>
-<p><a href="https://pytorch.org/docs/stable/distributed.html">Distributed communication package - torch.distributed — PyTorch 2.2 documentation</a></p>
-<p><a href="https://pytorch.org/docs/stable/data.html">torch.utils.data — PyTorch 2.2 documentation</a></p>
-]]></content>
-      <categories>
-        <category>PyTorch</category>
-      </categories>
-      <tags>
-        <tag>pytorch</tag>
-        <tag>multiprocessing</tag>
       </tags>
   </entry>
   <entry>
