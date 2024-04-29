@@ -19,29 +19,34 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Mist","darkmode":false,"version":"8.18.2","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="3D Gaussian Splatting（3DGS）通过利用3D Gaussian分布对3D空间物体进行模拟，以渲染后的目标图像作为约束，对3D空间内容进行建模，3DGS相比于NeRF效率更高。">
+    <meta name="description" content="扩散模型直接在像素空间进行扩散，生成效率太低，消耗资源过大，严重制约了模型推广到大尺寸图像的生成中。LDM提出从隐空间（latent space）来进行生产，这里的隐空间简单理解就是经过某种编码压缩后的特征空间。再小尺寸特征图上实现扩散和去噪的过程，从而提高效率。Stable Diffusion就是LDM的一个开源实现，可以用于文生图（T2I）任务中。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="3D Gaussian Splatting原理简介">
-<meta property="og:url" content="http://example.com/2024/01/06/3DGS/index.html">
+<meta property="og:title" content="ControlNet与DreamBooth：生成模型的精细控制与主体保持">
+<meta property="og:url" content="http://example.com/2024/04/30/ControlNet/index.html">
 <meta property="og:site_name" content="Brain in Machine">
-<meta property="og:description" content="3D Gaussian Splatting（3DGS）通过利用3D Gaussian分布对3D空间物体进行模拟，以渲染后的目标图像作为约束，对3D空间内容进行建模，3DGS相比于NeRF效率更高。">
+<meta property="og:description" content="扩散模型直接在像素空间进行扩散，生成效率太低，消耗资源过大，严重制约了模型推广到大尺寸图像的生成中。LDM提出从隐空间（latent space）来进行生产，这里的隐空间简单理解就是经过某种编码压缩后的特征空间。再小尺寸特征图上实现扩散和去噪的过程，从而提高效率。Stable Diffusion就是LDM的一个开源实现，可以用于文生图（T2I）任务中。">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2024-01-06T15:52:17.000Z">
-<meta property="article:modified_time" content="2024-01-10T17:52:07.596Z">
+<meta property="og:image" content="http://example.com/2024/04/30/ControlNet/image-20240428224256405.png">
+<meta property="og:image" content="http://example.com/2024/04/30/ControlNet/image-20240429182717342.png">
+<meta property="og:image" content="http://example.com/2024/04/30/ControlNet/image-20240429185610558.png">
+<meta property="og:image" content="http://example.com/2024/04/30/ControlNet/image-20240429185959146.png">
+<meta property="article:published_time" content="2024-04-29T17:11:04.000Z">
+<meta property="article:modified_time" content="2024-04-29T17:50:49.812Z">
 <meta property="article:author" content="jzsherlock">
-<meta property="article:tag" content="rendering">
-<meta property="article:tag" content="gaussian splatting">
+<meta property="article:tag" content="generative model">
+<meta property="article:tag" content="diffusion model">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2024/04/30/ControlNet/image-20240428224256405.png">
 
 
-<link rel="canonical" href="http://example.com/2024/01/06/3DGS/">
+<link rel="canonical" href="http://example.com/2024/04/30/ControlNet/">
 
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2024/01/06/3DGS/","path":"2024/01/06/3DGS/","title":"3D Gaussian Splatting原理简介"}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2024/04/30/ControlNet/","path":"2024/04/30/ControlNet/","title":"ControlNet与DreamBooth：生成模型的精细控制与主体保持"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>3D Gaussian Splatting原理简介 | Brain in Machine</title>
+<title>ControlNet与DreamBooth：生成模型的精细控制与主体保持 | Brain in Machine</title>
   
 
 
@@ -253,7 +258,7 @@ mjx-container[display="true"] + br {
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E8%83%8C%E6%99%AF%E4%B8%8E%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5"><span class="nav-number">1.</span> <span class="nav-text">任务背景与相关概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E6%95%B0%E5%AD%A6%E5%BD%A2%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">相关数学形式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#d-gaussian%E5%88%86%E5%B8%83%E7%9A%84%E6%95%B0%E5%AD%A6%E5%BD%A2%E5%BC%8F"><span class="nav-number">2.1.</span> <span class="nav-text">3D Gaussian分布的数学形式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%90%83%E8%B0%90%E5%87%BD%E6%95%B0"><span class="nav-number">2.2.</span> <span class="nav-text">球谐函数</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%96%B9%E6%B3%95"><span class="nav-number">3.</span> <span class="nav-text">实现方法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E6%B5%81%E7%A8%8B"><span class="nav-number">3.1.</span> <span class="nav-text">整体流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%AF%E5%BE%AE3dgs%E5%BD%A2%E5%BC%8F"><span class="nav-number">3.2.</span> <span class="nav-text">可微3DGS形式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E9%80%82%E5%BA%94%E5%AF%86%E5%BA%A6%E6%8E%A7%E5%88%B6"><span class="nav-number">3.3.</span> <span class="nav-text">自适应密度控制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BF%AB%E9%80%9F%E5%85%89%E6%A0%85%E5%8C%96%E7%AD%96%E7%95%A5"><span class="nav-number">3.4.</span> <span class="nav-text">快速光栅化策略</span></a></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#controlnet%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">ControlNet基本原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#controlnet%E7%9A%84%E7%9B%AE%E6%A0%87"><span class="nav-number">1.1.</span> <span class="nav-text">ControlNet的目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%96%B9%E6%B3%95"><span class="nav-number">1.2.</span> <span class="nav-text">实现方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E6%A6%82%E5%BF%B5zero-convolution"><span class="nav-number">1.3.</span> <span class="nav-text">关键概念：zero convolution</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#dreambooth%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">DreamBooth原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E4%BB%BB%E5%8A%A1%E7%9B%AE%E6%A0%87"><span class="nav-number">2.1.</span> <span class="nav-text">主要任务目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%96%B9%E6%A1%88"><span class="nav-number">2.2.</span> <span class="nav-text">核心方案</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -314,7 +319,7 @@ mjx-container[display="true"] + br {
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2024/01/06/3DGS/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/04/30/ControlNet/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/lawliet.jpeg">
@@ -327,12 +332,12 @@ mjx-container[display="true"] + br {
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="3D Gaussian Splatting原理简介 | Brain in Machine">
-      <meta itemprop="description" content="3D Gaussian Splatting（3DGS）通过利用3D Gaussian分布对3D空间物体进行模拟，以渲染后的目标图像作为约束，对3D空间内容进行建模，3DGS相比于NeRF效率更高。">
+      <meta itemprop="name" content="ControlNet与DreamBooth：生成模型的精细控制与主体保持 | Brain in Machine">
+      <meta itemprop="description" content="扩散模型直接在像素空间进行扩散，生成效率太低，消耗资源过大，严重制约了模型推广到大尺寸图像的生成中。LDM提出从隐空间（latent space）来进行生产，这里的隐空间简单理解就是经过某种编码压缩后的特征空间。再小尺寸特征图上实现扩散和去噪的过程，从而提高效率。Stable Diffusion就是LDM的一个开源实现，可以用于文生图（T2I）任务中。">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          3D Gaussian Splatting原理简介
+          ControlNet与DreamBooth：生成模型的精细控制与主体保持
         </h1>
 
         <div class="post-meta-container">
@@ -342,15 +347,9 @@ mjx-container[display="true"] + br {
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
+      
 
-      <time title="创建时间：2024-01-06 23:52:17" itemprop="dateCreated datePublished" datetime="2024-01-06T23:52:17+08:00">2024-01-06</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2024-01-11 01:52:07" itemprop="dateModified" datetime="2024-01-11T01:52:07+08:00">2024-01-11</time>
+      <time title="创建时间：2024-04-30 01:11:04 / 修改时间：01:50:49" itemprop="dateCreated datePublished" datetime="2024-04-30T01:11:04+08:00">2024-04-30</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -362,34 +361,52 @@ mjx-container[display="true"] + br {
         </span>
           ，
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Computer-Vision/Rendering/" itemprop="url" rel="index"><span itemprop="name">Rendering</span></a>
+          <a href="/categories/Computer-Vision/AIGC/" itemprop="url" rel="index"><span itemprop="name">AIGC</span></a>
         </span>
     </span>
 
   
 </div>
 
-            <div class="post-description">3D Gaussian Splatting（3DGS）通过利用3D Gaussian分布对3D空间物体进行模拟，以渲染后的目标图像作为约束，对3D空间内容进行建模，3DGS相比于NeRF效率更高。</div>
+            <div class="post-description">扩散模型直接在像素空间进行扩散，生成效率太低，消耗资源过大，严重制约了模型推广到大尺寸图像的生成中。LDM提出从隐空间（latent space）来进行生产，这里的隐空间简单理解就是经过某种编码压缩后的特征空间。再小尺寸特征图上实现扩散和去噪的过程，从而提高效率。Stable Diffusion就是LDM的一个开源实现，可以用于文生图（T2I）任务中。</div>
         </div>
       </header>
 
     
     
     
-    <div class="post-body" itemprop="articleBody"><p>reference:</p>
+    <div class="post-body" itemprop="articleBody"><h1 id="controlnet基本原理">ControlNet基本原理</h1>
+<p>原版论文：<a target="_blank" rel="noopener" href="https://openaccess.thecvf.com/content/ICCV2023/papers/Zhang_Adding_Conditional_Control_to_Text-to-Image_Diffusion_Models_ICCV_2023_paper.pdf">Adding Conditional Control to Text-to-Image Diffusion Models</a></p>
+<p>GitHub：<a target="_blank" rel="noopener" href="https://github.com/lllyasviel/ControlNet">https://github.com/lllyasviel/ControlNet</a></p>
+<p><img src="image-20240428224256405.png" alt="ControlNet结构示意图" style="zoom:50%;"></p>
+<h2 id="controlnet的目标">ControlNet的目标</h2>
+<p>通过引入条件信息实现精细控制，比如canny edge图、深度图、segmentation map图等，同时保留Stable Diffusion原版模型的生成能力。</p>
+<h2 id="实现方法">实现方法</h2>
+<p>先fix一个训练好的SD模型，然后将SD模型的encoder和middle部分的模块复制出来并打开训练，将控制图通过这些模块得到不同的控制特征图，然后利用zero convolution将这些特征图与fix的SD模型结合，最终实现带控制的生成。</p>
+<h2 id="关键概念zero-convolution">关键概念：zero convolution</h2>
+<p>所谓zero convolution，实际上是一个<span class="math inline"><mjx-container class="MathJax" jax="SVG"><svg style="vertical-align: 0;" xmlns="http://www.w3.org/2000/svg" width="5.028ex" height="1.507ex" role="img" focusable="false" viewBox="0 -666 2222.4 666"><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mn"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path></g><g data-mml-node="mo" transform="translate(722.2,0)"><path data-c="D7" d="M630 29Q630 9 609 9Q604 9 587 25T493 118L389 222L284 117Q178 13 175 11Q171 9 168 9Q160 9 154 15T147 29Q147 36 161 51T255 146L359 250L255 354Q174 435 161 449T147 471Q147 480 153 485T168 490Q173 490 175 489Q178 487 284 383L389 278L493 382Q570 459 587 475T609 491Q630 491 630 471Q630 464 620 453T522 355L418 250L522 145Q606 61 618 48T630 29Z"></path></g><g data-mml-node="mn" transform="translate(1722.4,0)"><path data-c="31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path></g></g></g></svg></mjx-container></span>卷积，但是需要保证期weight和bias初始化为0值。这是为了再初始训练的时候，condition部分对原有的SD不施加任何影响，从而保证ControlNet是在一个较强的基底模型上引入控制信息。</p>
+<p>这样做还有一个优点，即提高训练效率。可以看出，ControlNet实际上只训练了约一半的U-net，对于上采样部分直接用fix的预训练过的SD的权重，因此计算量增量比较低（相比于直接从头训练来说）。</p>
+<h1 id="dreambooth原理">DreamBooth原理</h1>
+<p>DreamBooth: Fine Tuning Text-to-Image Diffusion Models for Subject-Driven Generation</p>
+<figure>
+<img src="image-20240429182717342.png" alt="主体驱动生成方式"><figcaption aria-hidden="true">主体驱动生成方式</figcaption>
+</figure>
+<h2 id="主要任务目标">主要任务目标</h2>
+<p>实现主体驱动（即生成的主体可控的）T2I 图文生成。具体来讲，就是通过输入若干张带有某主体（比如某个猫狗宠物、某个花瓶、某个书包等等）的图像，对已有的图文生成模型进行微调，使其可以获得对主体进行文本控制生成的效果。相比与类别引导（比如“dog"）生成的语义符合大类的要求的图像，DreamBooth的任务更加侧重于对特称的某个事物进行保主体的生成，即不但需要得到图中的“一只狗”，而且需要是“这只狗”。</p>
+<h2 id="核心方案">核心方案</h2>
+<p>将输入图像中的特定主体与一个特殊的标识符（unique identifier）绑定，然后用带有这个标识符的文本对T2I模型进行生成。这个标识符是通过再vocabulary中找到rare token，并将其invert到文本空间得到的。这里作者讨论了几种不同的策略，最直接的，比如如果我们想要生成某一个特定的狗，那么文本应该直接写成"a special/unique dog with ..."，但是这个问题在于，像special这种词再训练中可能已经获取到的很多语义信息，这样的训练会让这些词先与原版的含义解离，然后再绑定到我们的主体上，但同时这也让模型（语言模型和扩散模型）的先验变弱；另一种思路就是找一个随机的文本，比如“xxy5syt00”这种，这个方法的问题在于，因为文本时无意义的，因此可能在tokenize的时候被切分成字母，而字母也是有强先验的。考虑到这些因素，在实验中，作者采用了另一种方法，那就是上面提到的在vocab中找本来就是不常见的token，然后将其绑定到当前主体上。这样即不会丢失已有的强语义先验，同时也可以加入新的主体的表征。</p>
+<p>对于T2I预训练模型的finetune会带来两个主要的问题，分别是语言漂移（language drift）和多样性降低（reduced output diversity）。</p>
 <ul>
-<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2308.04079">3D Gaussian Splatting for Real-Time Radiance Field Rendering</a></li>
-<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2401.03890">A Survey on 3D Gaussian Splatting</a></li>
+<li>language drift：对于一个在大规模语言数据集上训练好的模型，然后再到specific task上去微调，结果会使得模型逐渐丧失掉语法和语义的能力。</li>
+<li>reduced output diversity：对于few shot的finetune来说，模型逐渐靠近目标小数据集，可以生成符合目标主体的图像，但是同时也有一定的风险可能使得生成的结果再视角、姿态上变得多样性很少。</li>
 </ul>
-<h1 id="任务背景与相关概念">任务背景与相关概念</h1>
-<h1 id="相关数学形式">相关数学形式</h1>
-<h2 id="d-gaussian分布的数学形式">3D Gaussian分布的数学形式</h2>
-<h2 id="球谐函数">球谐函数</h2>
-<h1 id="实现方法">实现方法</h1>
-<h2 id="整体流程">整体流程</h2>
-<h2 id="可微3dgs形式">可微3DGS形式</h2>
-<h2 id="自适应密度控制">自适应密度控制</h2>
-<h2 id="快速光栅化策略">快速光栅化策略</h2>
+<p>为了解决上述问题，再训练过程中，DreamBooth还加入了一个约束项，即class-specific prior preservation loss，如图：</p>
+<p><img src="image-20240429185610558.png" alt="DreamBooth训练方案" style="zoom:50%;"></p>
+<p>比如，对于主体的大类别dog来说，一方面我们训练“A [V] dog”去拟合few shot数据集，同时另一方面强制要求"A dog"（没有特殊标识符的狗）和之前的预测结果一致（左侧锁定的SD模型）。对比实验发现，如果不加入这个约束只用上面的reconstruction loss的话，生成的所有狗都是和few shot输入数据类似的狗，这就失去了多样性。</p>
+<p>DreamBooth的实验结果示例，可以看出还是能够较好地preserve给定的主体，同时接受文本的引导。</p>
+<figure>
+<img src="image-20240429185959146.png" alt="DreamBooth结果样例"><figcaption aria-hidden="true">DreamBooth结果样例</figcaption>
+</figure>
 
     </div>
 
@@ -399,22 +416,19 @@ mjx-container[display="true"] + br {
 
     <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/rendering/" rel="tag"><i class="fa fa-tag"></i> rendering</a>
-              <a href="/tags/gaussian-splatting/" rel="tag"><i class="fa fa-tag"></i> gaussian splatting</a>
+              <a href="/tags/generative-model/" rel="tag"><i class="fa fa-tag"></i> generative model</a>
+              <a href="/tags/diffusion-model/" rel="tag"><i class="fa fa-tag"></i> diffusion model</a>
           </div>
 
         
 
           <div class="post-nav">
             <div class="post-nav-item">
-                <a href="/2024/01/06/SAM/" rel="prev" title="Segment-Anything模型（SAM）基本原理与代码分析">
-                  <i class="fa fa-angle-left"></i> Segment-Anything模型（SAM）基本原理与代码分析
+                <a href="/2024/04/30/SD/" rel="prev" title="潜变量扩散模型（LDM）与Stable Diffusion基本原理">
+                  <i class="fa fa-angle-left"></i> 潜变量扩散模型（LDM）与Stable Diffusion基本原理
                 </a>
             </div>
             <div class="post-nav-item">
-                <a href="/2024/01/06/CLIP/" rel="next" title="CLIP模型基本原理">
-                  CLIP模型基本原理 <i class="fa fa-angle-right"></i>
-                </a>
             </div>
           </div>
     </footer>
